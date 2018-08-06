@@ -1,6 +1,3 @@
-tests/*
-etc/local/*
-
 # macOS things
 .DS_Store
 
@@ -14,7 +11,7 @@ etc/local/*
 
 # Cache/logs
 cache/
-logs/*
+logs/
 
 # C extensions
 *.so
