@@ -14,7 +14,7 @@ etc/local/*
 
 # Cache/logs
 cache/
-logs/
+logs/*
 
 # C extensions
 *.so
