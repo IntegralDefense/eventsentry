@@ -1,0 +1,12 @@
+#!/bin/bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+if pgrep -f "python3 $DIR/sentry.py" &>/dev/null; then
+    printf "Event Sentry is already running!\n"
+else
+    printf "Starting Event Sentry in the background.\n"
+    . "$DIR/../venv/bin/activate"
+    nohup "$DIR/sentry.py" >/dev/null 2>&1 &
+    deactivate
+fi

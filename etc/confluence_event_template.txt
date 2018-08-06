@@ -1,0 +1,259 @@
+<ac:structured-macro ac:macro-id="table_of_contents" ac:name="toc" ac:schema-version="1">
+    <ac:parameter ac:name="outline">true</ac:parameter>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="time_table" ac:name="section" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h1>Time Table</h1>
+        <table>
+            <tbody>
+                <tr>
+                    <td class="highlight-red" data-highlight-colour="red">
+                        <strong>Created Time:</strong>
+                    </td>
+                    <td class="highlight-red" data-highlight-colour="red">
+                    </td>
+                </tr>
+                <tr>
+                    <td class="highlight-red" data-highlight-colour="red">
+                        <strong>Event Time:</strong>
+                    </td>
+                    <td class="highlight-red" data-highlight-colour="red">
+                    </td>
+                </tr>
+                <tr>
+                    <td class="highlight-red" data-highlight-colour="red">
+                        <strong>Alert Time:</strong>
+                    </td>
+                    <td class="highlight-red" data-highlight-colour="red">
+                    </td>
+                </tr>
+                <tr>
+                    <td class="highlight-red" data-highlight-colour="red">
+                        <strong>Report Time:</strong>
+                    </td>
+                    <td class="highlight-red" data-highlight-colour="red">
+                    </td>
+                </tr>
+                <tr>
+                    <td class="highlight-red" data-highlight-colour="red">
+                        <strong>Contain Time:</strong>
+                    </td>
+                    <td class="highlight-red" data-highlight-colour="red">
+                    </td>
+                </tr>
+                <tr>
+                    <td class="highlight-red" data-highlight-colour="red">
+                        <strong>Remediation Time:</strong>
+                    </td>
+                    <td class="highlight-red" data-highlight-colour="red">
+                    </td>
+                </tr>
+                <tr>
+                    <td class="highlight-red" data-highlight-colour="red">
+                        <strong>Event Closure Time:</strong>
+                    </td>
+                    <td class="highlight-red" data-highlight-colour="red">
+                    </td>
+                </tr>
+                <tr>
+                    <td class="highlight-red" data-highlight-colour="red">
+                        <strong>Initial Detection:</strong>
+                    </td>
+                    <td class="highlight-red" data-highlight-colour="red">
+                    </td>
+                </tr>
+                <tr>
+                    <td class="highlight-red" data-highlight-colour="red">
+                        <strong>Delivery Vector:</strong>
+                    </td>
+                    <td class="highlight-red" data-highlight-colour="red">
+                    </td>
+                </tr>
+                <tr>
+                    <td class="highlight-red" data-highlight-colour="red">
+                        <strong>Kill Chain Phase Reached:</strong>
+                    </td>
+                    <td class="highlight-red" data-highlight-colour="red">
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="overview" ac:name="section" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h1>Overview</h1>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="refresh_wiki" ac:name="section" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h1>Refresh Wiki</h1>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="intel_processing" ac:name="section" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h1>Intel Processing</h1>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="expand_process_event" ac:name="expand" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h2>Process Event</h2>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="expand_indicator_summary" ac:name="expand" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h2>Indicator Summary</h2>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="automated_analysis" ac:name="section" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h1>Automated Analysis</h1>
+        <pre style="color: red; font-weight: bold;">This section and its sub-sections are maintained automatically and may be overwritten.</pre>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="artifact_repository" ac:name="section" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h2>Artifact Repository</h2>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="event_detections" ac:name="section" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h2>Event Detections</h2>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="expand_event_detections" ac:name="expand" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h3>Extra Event Detections</h3>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="alerts" ac:name="section" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h2>Alerts</h2>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="crits_analysis" ac:name="section" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h2>CRITS Analysis</h2>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="phish_email_information" ac:name="section" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h2>Phish Email Information</h2>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="phish_headers" ac:name="section" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h2>Phish Headers</h2>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="phish_body" ac:name="section" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h2>Phish Body</h2>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="ace_screenshots" ac:name="section" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h2>ACE Screenshots</h2>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="user_analysis" ac:name="section" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h2>User Analysis</h2>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="url_analysis" ac:name="section" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h2>URL Analysis</h2>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="sandbox_analysis" ac:name="section" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h2>Sandbox Analysis</h2>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="manual_analysis" ac:name="section" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h1>Manual Analysis</h1>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="manual_indicators" ac:name="section" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h1>Manual Indicators</h1>
+        <div>
+            <p style="font-weight:bold; color:red;">PLACE YOUR INDICATORS INSIDE THIS BOX:</p>
+        </div>
+        <ac:structured-macro ac:macro-id="manual_indicators_text" ac:name="code" ac:schema-version="1">
+            <ac:plain-text-body></ac:plain-text-body>
+        </ac:structured-macro>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="containment_actions" ac:name="section" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h1>Containment Actions</h1>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="remediation" ac:name="section" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h1>Remediation</h1>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="improvement" ac:name="section" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h1>Improvement Opportunities</h1>
+    </ac:rich-text-body>
+</ac:structured-macro>
+
+<ac:structured-macro ac:macro-id="timeline" ac:name="section" ac:schema-version="1">
+    <ac:parameter ac:name="border">true</ac:parameter>
+    <ac:rich-text-body>
+        <h1>Timeline</h1>
+    </ac:rich-text-body>
+</ac:structured-macro>
