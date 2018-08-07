@@ -777,7 +777,11 @@ class ConfluenceEventPage(BaseConfluencePage):
             try:
                 for indicator in good_indicators:
                     # Only continue if we haven't already queried for this indicator.
-                    if not indicator['value'] in already_checked_indicators:
+                    type_value = indicator['type'] + indicator['value']
+                    if not type_value in already_checked_indicators:
+                        # Cache this indicator type/value pair.
+                        already_checked_indicators.append(type_value)
+
                         # Search CRITS for any Analyzed indicators matching this one.
                         crits_indicators = self.mongo_connection.find('indicators', {'status': 'Analyzed', 'type': indicator['type'], 'value': indicator['value']})
 
