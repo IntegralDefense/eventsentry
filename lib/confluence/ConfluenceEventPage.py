@@ -824,7 +824,7 @@ class ConfluenceEventPage(BaseConfluencePage):
 
                                     pre.string += '\n'
                                 else:
-                                    self.logger.error('Skipping indicator: {}'.format(crits_indicator['value']))
+                                    self.logger.debug('Skipping indicator: {}'.format(crits_indicator['value']))
             except:
                 self.logger.exception('Unable to update the CRITS Analysis section.')
 
