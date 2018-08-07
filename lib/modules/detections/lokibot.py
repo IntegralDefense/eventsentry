@@ -4,7 +4,7 @@ import requests
 logger = logging.getLogger()
 
 
-def run(event_json, good_indicators):
+def run(config, event_json, good_indicators):
     logger.debug('Running the Loki Bot detection module.')
 
     tags = []

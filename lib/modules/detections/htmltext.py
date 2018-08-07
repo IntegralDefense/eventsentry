@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 logger = logging.getLogger()
 
 
-def run(event_json, good_indicators):
+def run(config, event_json, good_indicators):
     logger.debug('Running the HTML text detection module.')
 
     tags = []

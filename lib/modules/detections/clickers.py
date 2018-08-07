@@ -6,15 +6,18 @@ import subprocess
 logger = logging.getLogger()
 
 
-def run(event_json, good_indicators):
+def run(config, event_json, good_indicators):
     logger.debug('Running the clickers detection module.')
 
     tags = []
     detections = []
     extra = []
 
+    # Identify the module's name.
+    module_name = __name__.split('.')[-1]
+
     # Simple regex that defines what an employee ID looks like.
-    employee_id_pattern = re.compile(r'[a-zA-Z]\d{6}')
+    employee_id_pattern = re.compile(r'{}'.format(config.get(module_name, 'employee_id_pattern')))
 
     """
     QUERY SPLUNK FOR CLICKERS IN PROXY LOGS
@@ -39,11 +42,8 @@ def run(event_json, good_indicators):
     start_time = start_time[0:19]
 
     # These are legit things that we expect to generate some results.
-    whitelisted_things = ['pcn0351378', 'pcn0351545', 'brians-macbook', 'A423312', 'A428055', 'A420539', 'A344816', 'A406794', 'A361144', 'A312391', 'A419591', 'Chriss-MacBook', 'analysis.local']
-    whitelisted_things_string = ''
-    for host in whitelisted_things:
-        whitelisted_things_string += 'NOT {} '.format(host)
-    whitelisted_things_string = whitelisted_things_string[:-1]
+    whitelisted_things = list(set(config.get(module_name, 'whitelisted_things').split(',')))
+    whitelisted_things_string = 'NOT ' + ' NOT '.join(whitelisted_things)
 
     # Only continue if we have a valid start time.
     if len(start_time) == 19:
@@ -180,6 +180,9 @@ def run(event_json, good_indicators):
                 # Make sure there are actually IDs in this company that we need to search for.
                 if duo_ids[company]:
 
+                    # Store the Splunk output lines for each Duo user.
+                    output_lines = []
+
                     # Build the user ID "OR" string for the search.
                     user_id_string = ' OR '.join(list(set(duo_ids[company])))
 
@@ -193,7 +196,6 @@ def run(event_json, good_indicators):
                         if output:
 
                             # Clean up the output lines.
-                            output_lines = []
                             for line in output.splitlines():
 
                                 # Skip over the Bluecoat logs with authentication_failed since they don't identify a user.
@@ -204,9 +206,23 @@ def run(event_json, good_indicators):
                                 cleaned_line = ' '.join(line.split('"')[1:-1])
                                 output_lines.append(cleaned_line)
 
-                            detections.append('! CLICKER DUO PUSH {} !'.format(company.upper()))
                             extra.append('\n'.join(output_lines))
                     except:
                         logger.exception('Error when running Splunk search: {}'.format(command)) 
+
+                    """
+                    ANALYZE OUTPUT LINES FOR EACH DUO USER TO DETERMINE DETECTIONS
+                    """
+
+                    # Standardize the format of the output lines.
+                    output_lines = [line.lower() for line in output_lines]
+
+                    for user_id in duo_ids[company]:
+
+                        # Get all of the Duo log lines for this user.
+                        duo_lines = [line for line in output_lines if user_id in line]
+
+                        if duo_lines:
+                            detections.append('! CLICKER {} DUO PUSH ! {}'.format(company.upper(), user_id))
 
     return tags, detections, extra

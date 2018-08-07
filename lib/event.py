@@ -550,12 +550,21 @@ class Event():
 
         detection_modules = os.listdir(os.path.join(this_dir, 'modules', 'detections'))
 
+        # Load the detection module config file.
+        config_path = os.path.join(this_dir, 'modules', 'detections', 'etc', 'local', 'config.ini')
+        try:
+            config = configparser.ConfigParser()
+            config.read(config_path)
+        except:
+            self.logger.error('Error loading detection module config.ini at: {}'.format(config_path))
+            config = None
+
         for file in detection_modules:
             if file.endswith('.py'):
                 name = file[:-3]
                 try:
                     module = importlib.import_module('modules.detections.{}'.format(name))
-                    tags, detections, extra = module.run(self.json, good_indicators)
+                    tags, detections, extra = module.run(config, self.json, good_indicators)
                     all_tags += tags
                     all_detections += detections
                     all_extra += extra
