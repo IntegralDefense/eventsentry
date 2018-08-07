@@ -24,7 +24,11 @@ def run(config, event_json, good_indicators):
     """
 
     # These are the companies that will get Splunk queries.
-    company_names = ['ashland', 'valvoline']
+    ignore_these_companies = list(set(config.get(module_name, 'ignore_these_companies').split(',')))
+    company_names = set()
+    for alert in event_json['ace_alerts']:
+        if alert['company_name'] and not alert['company_name'] in ignore_these_companies:
+            company_names.add(alert['company_name'])
 
     # Store the employee IDs that clicked and need a follow up Duo search.
     duo_ids = {}
