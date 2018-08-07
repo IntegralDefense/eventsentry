@@ -162,7 +162,7 @@ def run(config, event_json, good_indicators):
 
                     # Only bother adding an event detection for CB logs if there were no Bluecoat logs for this user.
                     if carbonblack_lines and not bluecoat_lines:
-                        detections.append(' CLICKER {} OFF NETWORK ! {} {}'.format(company.upper(), user_id, i['value']))
+                        detections.append('! CLICKER {} OFF NETWORK ! {} {}'.format(company.upper(), user_id, i['value']))
 
                     # Make sure we actually added a detection for this user.
                     if not any(user_id in d for d in detections):
