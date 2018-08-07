@@ -15,5 +15,5 @@ six==1.11.0
 tld==0.9
 urllib3==1.23
 git+https://github.com/lolnate/critsapi.git
-git+https://github.com/IntegralDefense/critswhitelist.git
 git+https://github.com/IntegralDefense/urltools.git
+git+https://github.com/IntegralDefense/critswhitelist.git
