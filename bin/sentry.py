@@ -177,12 +177,6 @@ def process_event(event):
         logger.info('Event has changed. Updating wiki: {}'.format(e.json['name']))
 
         """
-        FLAG IS TRUE IF WHITELISTED INDICATORS ADDED TO CRITS OR THERE WERE NEW MANUAL INDICATORS
-        """
-
-        resetup_event = True
-
-        """
         ADD ANY WHITELISTED INDICATORS FROM THE SUMMARY TABLE TO CRITS
         """
 
@@ -191,8 +185,7 @@ def process_event(event):
 
         if whitelisted_indicators:
 
-            logger.info('Newly whitelisted indicators. Need to re-setup event: {}'.format(e.json['name']))
-            resetup_event = True
+            logger.info('Detected newly whitelisted indicators: {}'.format(e.json['name']))
 
             # If there were any Hash indicators checked as whitelisted, we need to check if there are any related
             # Hash indicators that were NOT checked. If there were, we want to make sure to treat them as whitelisted.
@@ -269,56 +262,54 @@ def process_event(event):
             for i in manual_indicators:
                 i['tags'].append('manual_indicator')
 
-            logger.info('Manual indicators exist. Need to re-setup event: {}'.format(e.json['name']))
-            resetup_event = True
+            logger.info('Adding new manual indicators to CRITs: {}'.format(e.json['name']))
+
         # Check if any of the indicators in the event JSON have the 'manual_indicator' tag.
         # Since there aren't any indicators in the Manual Indicators section, this indicates
         # that they were deleted from the page.
         else:
             if any('manual_indicator' in ind['tags'] for ind in e.json['indicators']):
-                logger.info('Manual indicators removed from wiki. Need to re-setup event: {}'.format(e.json['name']))
-                resetup_event = True
+                logger.info('Manual indicators removed from wiki. Need to remove them from CRITs: {}'.format(e.json['name']))
 
         """
-        RE-SETUP THE EVENT IF NECESSARY
+        RE-SETUP THE EVENT
         """
 
-        if resetup_event:
-            # Parse the event.
-            try:
-                e.setup(manual_indicators=manual_indicators, force=True)
-            except:
-                logger.exception('Error refreshing Event object: {}'.format(e.json['name']))
-                return
+        # Parse the event.
+        try:
+            e.setup(manual_indicators=manual_indicators, force=True)
+        except:
+            logger.exception('Error refreshing Event object: {}'.format(e.json['name']))
+            return
 
-            # Get the remediation status for the e-mails in the event.
-            try:
-                for email in e.json['emails']:
-                    email['remediated'] = False
+        # Get the remediation status for the e-mails in the event.
+        try:
+            for email in e.json['emails']:
+                email['remediated'] = False
 
-                    if email['original_recipient']:
-                        key = '{}:{}'.format(email['message_id'], email['original_recipient'])
-                    elif len(email['to_addresses']) == 1:
-                        key = '{}:{}'.format(email['message_id'], email['to_addresses'][0])
+                if email['original_recipient']:
+                    key = '{}:{}'.format(email['message_id'], email['original_recipient'])
+                elif len(email['to_addresses']) == 1:
+                    key = '{}:{}'.format(email['message_id'], email['to_addresses'][0])
 
-                    # Continue if we were able to create the MySQL "key" value for this e-mail.
-                    if key:
+                # Continue if we were able to create the MySQL "key" value for this e-mail.
+                if key:
 
-                        # Search the ACE database for the remediation status.
-                        c = ace_db.cursor()
-                        query = 'SELECT * FROM remediation WHERE `key`="{}"'.format(key)
-                        c.execute(query)
+                    # Search the ACE database for the remediation status.
+                    c = ace_db.cursor()
+                    query = 'SELECT * FROM remediation WHERE `key`="{}"'.format(key)
+                    c.execute(query)
 
-                        # Fetch all of the rows.
-                        rows = c.fetchall()
-                        for row in rows:
-                            result = row[6]
-                            # A successful result string in the database looks like:
-                            # (200) [{"address":"recipientuser@domain.com","code":200,"message":"success"}]
-                            if '"code":200' in result and '"message":"success"' in result:
-                                email['remediated'] = True
-            except:
-                logger.exception('Error getting remediation status for e-mail.')
+                    # Fetch all of the rows.
+                    rows = c.fetchall()
+                    for row in rows:
+                        result = row[6]
+                        # A successful result string in the database looks like:
+                        # (200) [{"address":"recipientuser@domain.com","code":200,"message":"success"}]
+                        if '"code":200' in result and '"message":"success"' in result:
+                            email['remediated'] = True
+        except:
+            logger.exception('Error getting remediation status for e-mail.')
                         
         """
         ADD CRITS STATUS OF EACH INDICATOR TO THE EVENT JSON
