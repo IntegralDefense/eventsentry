@@ -721,7 +721,7 @@ class ConfluenceEventPage(BaseConfluencePage):
         # Set up the table header row.
         thead = self.new_tag('thead', parent=table)
         tr = self.new_tag('tr', parent=thead)
-        titles = ['URL', 'Time', 'Description', 'Tool', 'Type']
+        titles = ['URL', 'Time', 'Description', 'Tool', 'Type', 'Company']
         for title in titles:
             th = self.new_tag('th', parent=tr)
             th.string = title
@@ -747,6 +747,9 @@ class ConfluenceEventPage(BaseConfluencePage):
 
             td = self.new_tag('td', parent=tr)
             td.string = alert['type']
+
+            td = self.new_tag('td', parent=tr)
+            td.string = alert['company_name'].title()
 
         self.update_section(div, old_section_id='alerts')
 
@@ -777,7 +780,11 @@ class ConfluenceEventPage(BaseConfluencePage):
             try:
                 for indicator in good_indicators:
                     # Only continue if we haven't already queried for this indicator.
-                    if not indicator['value'] in already_checked_indicators:
+                    type_value = indicator['type'] + indicator['value']
+                    if not type_value in already_checked_indicators:
+                        # Cache this indicator type/value pair.
+                        already_checked_indicators.append(type_value)
+
                         # Search CRITS for any Analyzed indicators matching this one.
                         crits_indicators = self.mongo_connection.find('indicators', {'status': 'Analyzed', 'type': indicator['type'], 'value': indicator['value']})
 
