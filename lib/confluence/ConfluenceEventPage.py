@@ -94,6 +94,14 @@ class ConfluenceEventPage(BaseConfluencePage):
         # Loop over each line in the visible text and see what indicators we can find.
         for line in visible_text:
 
+            # Gross "fix" for the Â character that likes to appear in this section.
+            # It appears to be the bytes 0xc382... No idea...
+            # TODO: Figure out where this character keeps coming from.
+            try:
+                line = line.encode('ascii', errors='ignore').decode('ascii', errors='ignore')
+            except:
+                pass
+
             # Does this line have a comma in it? It might be a full indicator type/value/tags definition.
             full_indicator = False
             if ',' in line:
@@ -107,7 +115,7 @@ class ConfluenceEventPage(BaseConfluencePage):
                         full_indicator = True
 
                         indicator_type = split_line[0]
-                        value = split_line[1]
+                        value = split_line[1].strip()
 
                         # Try to get any additional tags that were specified.
                         try:
