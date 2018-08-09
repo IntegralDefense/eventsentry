@@ -175,7 +175,7 @@ def run(config, event_json, good_indicators):
                     # Only bother adding an event detection for CB logs if there were no Bluecoat logs for this user.
                     if carbonblack_lines and not bluecoat_lines:
                         duo_ids.append(user_id)
-                        detections.append('! CLICKER {} OFF NETWORK ! {} {} <--- LOCK ACCOUNT AND CONTACT USER'.format(company.upper(), user_id, domain_ip))
+                        detections.append('! CLICKER {} OFF NETWORK ! {} {} <--- CONTACT USER AND LOCK ACCOUNT'.format(company.upper(), user_id, domain_ip))
 
             # Make sure we actually added a detection for each user.
             for user_id in clicker_ids:

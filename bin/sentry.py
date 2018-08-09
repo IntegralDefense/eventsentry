@@ -131,26 +131,26 @@ def process_event(event):
     # Connect to the ACE database.
     ace_db = MySQLdb.connect(host=config['production']['ace_db_server'], user=config['production']['ace_db_user'], passwd=config['production']['ace_db_pass'], db=config['production']['ace_db_name'])
 
-    # Create a CRITS Mongo connection.
+    # Create a CRITs Mongo connection.
     mongo_uri = config.get('production', 'crits_mongo_url')
     mongo_db = config.get('production', 'crits_mongo_db')
     logger.debug('Connecting to Mongo "{}" database: {}'.format(mongo_db, mongo_uri))
     mongo_connection = CRITsDBAPI(mongo_uri=mongo_uri, db_name=mongo_db)
     mongo_connection.connect()
 
-    # Create a CRITS API connection.
+    # Create a CRITs API connection.
     api_url = config.get('production', 'crits_api_url')
     cert = config.get('production', 'verify_requests_cert')
     api_key = config.get('production', 'crits_api_key')
     api_user = config.get('production', 'crits_api_user')
-    logger.debug('Connecting to the CRITS API: {}'.format(api_url))
+    logger.debug('Connecting to the CRITs API: {}'.format(api_url))
     crits_api = CRITsAPI(api_url=api_url, api_key=api_key, username=api_user, verify=cert)
 
-    # Get the valid campaigns from CRITS, excluding the "Campaign" campaign.
+    # Get the valid campaigns from CRITs, excluding the "Campaign" campaign.
     crits_campaigns = list(mongo_connection.find_all('campaigns'))
     campaign_names = [c['name'] for c in crits_campaigns if not c['name'] == 'Campaign']
 
-    # Store the CRITS campaign names with a lowercase wiki tag version.
+    # Store the CRITs campaign names with a lowercase wiki tag version.
     campaign_dict = {}
     for campaign in campaign_names:
         campaign_dict[campaign.replace(' ', '').lower()] = campaign
@@ -177,13 +177,7 @@ def process_event(event):
         logger.info('Event has changed. Updating wiki: {}'.format(e.json['name']))
 
         """
-        FLAG IS TRUE IF WHITELISTED INDICATORS ADDED TO CRITS OR THERE WERE NEW MANUAL INDICATORS
-        """
-
-        resetup_event = True
-
-        """
-        ADD ANY WHITELISTED INDICATORS FROM THE SUMMARY TABLE TO CRITS
+        ADD ANY WHITELISTED INDICATORS FROM THE SUMMARY TABLE TO CRITs
         """
 
         # Read the Indicator Summary table to see if there are any checked (whitelisted) indicators.
@@ -191,8 +185,7 @@ def process_event(event):
 
         if whitelisted_indicators:
 
-            logger.info('Newly whitelisted indicators. Need to re-setup event: {}'.format(e.json['name']))
-            resetup_event = True
+            logger.info('Detected newly whitelisted indicators: {}'.format(e.json['name']))
 
             # If there were any Hash indicators checked as whitelisted, we need to check if there are any related
             # Hash indicators that were NOT checked. If there were, we want to make sure to treat them as whitelisted.
@@ -219,12 +212,13 @@ def process_event(event):
                                             logger.debug('Whitelisting "{}" indicator "{}" by association to: {}'.format(good_indicator['type'], rel, i['value']))
                                             whitelisted_indicators.append(good_indicator)
 
-            # Add the whitelisted indicators to the CRITS whitelist.
+            # Add the whitelisted indicators to the CRITs whitelist.
             for i in whitelisted_indicators:
+
                 # If this is a "URI - Path" or "URI - URL" indicator, check its relationships to see if its
                 # corresponding "URI - Domain Name" or "Address - ipv4-addr" indicator was also checked. If it was,
                 # we want to ignore the path and URL indicators since the domain/IP serves as a least common denominator.
-                # This prevents the CRITS whitelist from ballooning in size and slowing things down over time.
+                # This prevents the CRITs whitelist from ballooning in size and slowing things down over time.
                 skip = False
                 if i['type'] == 'URI - Path' or i['type'] == 'URI - URL':
 
@@ -239,11 +233,11 @@ def process_event(event):
                             for x in whitelisted_indicators:
                                 if x['type'] == 'URI - Domain Name' or x['type'] == 'Address - ipv4-addr':
                                     if any(x['value'] in rel for rel in relationships) or x['value'] in i['value']:
-                                        logger.debug('Ignoring redundant "{}" indicator "{}" for CRITS whitelist.'.format(i['type'], i['value']))
+                                        logger.debug('Ignoring redundant "{}" indicator "{}" for CRITs whitelist.'.format(i['type'], i['value']))
                                         skip = True
 
                 if not skip:
-                    logger.warning('Adding "{}" indicator "{}" to CRITS whitelist.'.format(i['type'], i['value']))
+                    logger.warning('Adding "{}" indicator "{}" to CRITs whitelist.'.format(i['type'], i['value']))
     
                     try:
                         result = crits_api.add_indicator(i['value'], i['type'], source='Integral',
@@ -254,81 +248,109 @@ def process_event(event):
                         if result:
                             crits_api.status_update(result['id'], result['type'], 'Deprecated')
                     except:
-                        logger.exception('Error adding "{}" indicator "{}" to CRITS whitelist'.format(i['type'], i['value']))
+                        logger.exception('Error adding "{}" indicator "{}" to CRITs whitelist'.format(i['type'], i['value']))
 
         """
-        PULL IN MANUAL INDICATORS FROM THE WIKI PAGE INTO THE EVENT JSON
+        READ MANUAL INDICATORS FROM WIKI PAGE AND ADD NEW ONES TO CRITS
         """
 
-        # Read whatever manual indicators are listed on the wiki page.
+        # Read whatever manual indicators are listed on the wiki page so they can be added to CRITs and the event.
         manual_indicators = wiki.read_manual_indicators()
-        if manual_indicators:
+
+        for i in manual_indicators:
 
             # Add a "manual_indicator" tag to the indicators so that we can exclude them from the
             # monthly indicator pruning process.
-            for i in manual_indicators:
-                i['tags'].append('manual_indicator')
+            i['tags'].append('manual_indicator')
 
-            logger.info('Manual indicators exist. Need to re-setup event: {}'.format(e.json['name']))
-            resetup_event = True
-        # Check if any of the indicators in the event JSON have the 'manual_indicator' tag.
-        # Since there aren't any indicators in the Manual Indicators section, this indicates
-        # that they were deleted from the page.
-        else:
-            if any('manual_indicator' in ind['tags'] for ind in e.json['indicators']):
-                logger.info('Manual indicators removed from wiki. Need to re-setup event: {}'.format(e.json['name']))
-                resetup_event = True
+            # Get the indicator's CRITs status.
+            crits_id = indicator.get_crits_id(mongo_connection, i)
+            status = indicator.get_crits_status(mongo_connection, i)
+
+            # Add it to CRITs if it doesn't already exist in CRITs and the status is New.
+            if not crits_id and status == 'New':
+            
+                try:
+                    # Assemble the correct tags to add to this indicator.
+                    ignore_these_tags = config.get('production', 'ignore_these_labels')
+                    add_these_tags = [tag for tag in e.json['tags'] if not tag in ignore_these_tags]
+                    i['tags'] += add_these_tags
+
+                    # Perform the API call to add the indicator.
+                    result = crits_api.add_indicator(i['value'], i['type'], source='Integral',
+                                                     reference=wiki.get_page_url(), bucket_list=i['tags'],
+                                                     add_domain=False)
+                    logger.warning('Added "{}" manual indicator "{}" to CRITs: {}'.format(i['type'], i['value'], result['id']))
+                except:
+                    logger.exception('Error adding "{}" manual indicator "{}" to CRITs'.format(i['type'], i['value']))
+
+        # Check if there are any manual indicators in the event JSON that do not appear in this current
+        # reading of the Manual Indicators section. This implies that someone removed something from the
+        # table on the wiki page and refreshed the page. Presumably this means they did not actually want
+        # that indicator, so the best we can do for now it to change its status to Informational.
+        # TODO: Possible improvement to this would be to search for FA Queue ACE alerts for this indicator
+        # and FP them, which would also set the indicator's status to Informational.
+        old_manual_indicators = [i for i in e.json['indicators'] if 'manual_indicator' in i['tags']]
+        for old_indicator in old_manual_indicators:
+            if not [i for i in manual_indicators if i['type'] == old_indicator['type'] and i['value'] == old_indicator['value']]:
+                try:
+                    # Find the indicator's CRITs ID and disable it.
+                    crits_id = indicator.get_crits_id(mongo_connection, old_indicator)
+                    if crits_id:
+                        crits_api.status_update(crits_id, 'Indicator', 'Informational')
+                        logger.error('Disabled deleted "{}" manual indicator "{}" in CRITs: {}'.format(old_indicator['type'], old_indicator['value'], crits_id))
+                except:
+                    logger.exception('Error disabling deleted "{}" manual indicator "{}" in CRITs'.format(old_indicator['type'], old_indicator['value']))
 
         """
-        RE-SETUP THE EVENT IF NECESSARY
+        RE-SETUP THE EVENT
         """
 
-        if resetup_event:
-            # Parse the event.
-            try:
-                e.setup(manual_indicators=manual_indicators, force=True)
-            except:
-                logger.exception('Error refreshing Event object: {}'.format(e.json['name']))
-                return
+        # Parse the event.
+        try:
+            e.setup(manual_indicators=manual_indicators, force=True)
+        except:
+            logger.exception('Error refreshing Event object: {}'.format(e.json['name']))
+            return
 
-            # Get the remediation status for the e-mails in the event.
-            try:
-                for email in e.json['emails']:
-                    email['remediated'] = False
+        # Get the remediation status for the e-mails in the event.
+        try:
+            for email in e.json['emails']:
+                email['remediated'] = False
 
-                    if email['original_recipient']:
-                        key = '{}:{}'.format(email['message_id'], email['original_recipient'])
-                    elif len(email['to_addresses']) == 1:
-                        key = '{}:{}'.format(email['message_id'], email['to_addresses'][0])
+                if email['original_recipient']:
+                    key = '{}:{}'.format(email['message_id'], email['original_recipient'])
+                elif len(email['to_addresses']) == 1:
+                    key = '{}:{}'.format(email['message_id'], email['to_addresses'][0])
 
-                    # Continue if we were able to create the MySQL "key" value for this e-mail.
-                    if key:
+                # Continue if we were able to create the MySQL "key" value for this e-mail.
+                if key:
 
-                        # Search the ACE database for the remediation status.
-                        c = ace_db.cursor()
-                        query = 'SELECT * FROM remediation WHERE `key`="{}"'.format(key)
-                        c.execute(query)
+                    # Search the ACE database for the remediation status.
+                    c = ace_db.cursor()
+                    query = 'SELECT * FROM remediation WHERE `key`="{}"'.format(key)
+                    c.execute(query)
 
-                        # Fetch all of the rows.
-                        rows = c.fetchall()
-                        for row in rows:
-                            result = row[6]
-                            # A successful result string in the database looks like:
-                            # (200) [{"address":"recipientuser@domain.com","code":200,"message":"success"}]
-                            if '"code":200' in result and '"message":"success"' in result:
-                                email['remediated'] = True
-            except:
-                logger.exception('Error getting remediation status for e-mail.')
+                    # Fetch all of the rows.
+                    rows = c.fetchall()
+                    for row in rows:
+                        result = row[6]
+                        # A successful result string in the database looks like:
+                        # (200) [{"address":"recipientuser@domain.com","code":200,"message":"success"}]
+                        if '"code":200' in result and '"message":"success"' in result:
+                            email['remediated'] = True
+        except:
+            logger.exception('Error getting remediation status for e-mail.')
                         
         """
-        ADD CRITS STATUS OF EACH INDICATOR TO THE EVENT JSON
+        ADD CRITs STATUS OF EACH INDICATOR TO THE EVENT JSON
         """
 
-        # Used as a cache so we don't query CRITS for the same indicator.
+        # Used as a cache so we don't query CRITs for the same indicator.
         queried_indicators = {}
 
-        # Query CRITS to get the status of the indicators.
-        logger.debug('Querying CRITS for indicator statuses.') 
+        # Query CRITs to get the status of the indicators.
+        logger.debug('Querying CRITs for indicator statuses.') 
 
         for i in e.json['indicators']:
             type_value = '{}{}'.format(i['type'], i['value'])
@@ -336,13 +358,13 @@ def process_event(event):
             # Continue if we haven't already processed this type/value pair indicator.
             if not type_value in queried_indicators:
 
-                # Get the indicator status from CRITS. Ignore any indicators that were already set to Informational.
+                # Get the indicator status from CRITs. Ignore any indicators that were already set to Informational.
                 if not i['status'] == 'Informational':
                     i['status'] = indicator.get_crits_status(mongo_connection, i)
 
                 # Add the indicator to the queried cache.
                 queried_indicators[type_value] = i['status']
-            # We've already queried CRITS for this type/value, so just set the status.
+            # We've already queried CRITs for this type/value, so just set the status.
             else:
                 i['status'] = queried_indicators[type_value]
 
@@ -485,11 +507,11 @@ def process_event(event):
                 command_string = ' && '.join(commands)
                 os.system(command_string)
                 
-                # Query CRITS to make sure the event actually exists now.
+                # Query CRITs to make sure the event actually exists now.
                 crits_events = [e['title'] for e in list(mongo_connection.find_all('events'))]
                 if e.json['name'] in crits_events:
 
-                    # If it exists in CRITS, close the event in ACE.
+                    # If it exists in CRITs, close the event in ACE.
                     try:
                         c = ace_db.cursor()
                         c.execute('SELECT * FROM events WHERE status="OPEN" AND id={}'.format(e.json['ace_id']))
@@ -499,7 +521,7 @@ def process_event(event):
                             logger.warning('Closed event in ACE: {}'.format(e.json['name']))
                         c.close()
 
-                        # Update the wiki to reflect that the event was processed into CRITS.
+                        # Update the wiki to reflect that the event was processed into CRITs.
                         wiki.update_event_processed()
                     except:
                         logger.exception('Error when closing the event in ACE: {}'.format(e.json['name']))

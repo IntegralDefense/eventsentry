@@ -26,7 +26,6 @@ from lib.parsers import ACEAlert
 from lib.parsers import BaseSandboxParser
 from lib.parsers import CuckooParser
 from lib.parsers import EmailParser
-#from lib.url import find_urls
 from lib.indicator import make_url_indicators
 from lib.parsers import VxstreamParser
 from lib.parsers import WildfireParser
@@ -348,7 +347,8 @@ class Event():
             for indicator in manual_indicators:
                 self.logger.debug('Adding manual indicator to JSON: {} - {}'.format(indicator['type'], indicator['value']))
                 indicator['path'] = ''
-                indicator['whitelisted'] = whitelist.is_indicator_whitelisted(indicator)
+                # We want to allow the Manual Indicators section to bypass the whitelist.
+                indicator['whitelisted'] = False 
                 self.json['indicators'].append(indicator)
 
             """
