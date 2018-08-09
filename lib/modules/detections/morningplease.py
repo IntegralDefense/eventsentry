@@ -10,6 +10,12 @@ def run(config, event_json, good_indicators):
     detections = []
     extra = []
 
+    # Identify the module's name.
+    module_name = __name__.split('.')[-1]
+
+    # Get the list of e-mail addresses from the config.
+    mp_emails = config.get(module_name, 'emails').split(',')
+
     # Try to identify Morning Please by the e-mail body.
     for email in event_json['emails']:
 
@@ -29,10 +35,6 @@ def run(config, event_json, good_indicators):
                 elif all(s in email['html'] for s in ss):
                     detections.append('Detected a Morning Please phish by Word document attachment and the e-mail body: {}'.format(ss))
                     tags.append('morningplease')
-
-    # Try to identify Morning Please by WHOIS.
-    mp_emails = ['jichang@yahoo.com', 'WilliamKCrum@yahoo.com', 'jiamcho1955@dnsname.info', 'opicasts@dnsname.info',
-                 'LiliKung@rhyta.com', 'shingtao@jourrapide.com', 'zhejiangshangbang@qq.com']
 
     for whois in event_json['whois']:
         for mp_email in mp_emails:
