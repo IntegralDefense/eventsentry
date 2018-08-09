@@ -13,6 +13,12 @@ def run(config, event_json, good_indicators):
     detections = []
     extra = []
 
+    # Identify the module's name.
+    module_name = __name__.split('.')[-1]
+
+    # There are some domains we don't care about since it's likely that it's just the attacker using their own address.
+    ignore_domains = list(set(config.get(module_name, 'ignore_domains').split(',')))
+
     # This will hold the list of e-mail addresses to use when checking MX records.
     emails_to_check = []
 
@@ -37,11 +43,8 @@ def run(config, event_json, good_indicators):
         except:
             pass
 
-    # There are some domains we don't care about since it's likely that it's just the attacker using their own address.
-    ignore_domains = ['inbox.lv', 'zoho.eu', 'hanmail.net', 'cox.net', 'swissonline.ch', 'hotmail.com', 'zipmail.com.br', 'gmail.com', 'yahoo.com', 'uol.com.br', 'outlook.com', 'mail.ru', '163.com', '163.net', '263.com', '263.net', 'aol.com', 'comcast.net', 'atos.net', 'ashland.com', 'valvoline.com', 'salesforce.com', 't-online.de', 't-online.hu', 'daum.net', 'microsoft.com', 'zoho.com', 'sapo.pt']
-
     # These are wiki page tags that, if present, we want to ignore the MITMB detection module.
-    ignore_tags = ['1000_talents']
+    ignore_tags = list(set(config.get(module_name, 'ignore_tags').split(',')))
     if any(t in event_json['tags'] for t in ignore_tags):
         return tags, detections, extra
 
