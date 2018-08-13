@@ -8,6 +8,6 @@ def run(event_json):
 
     if 'nanocore' in event_json['tags']:
         for i in event_json['indicators']:
-            if i['type'] == 'Windows - File Name' and not 'sandboxed_sample' in i['tags']:
+            if i['type'] == 'Windows - FileName' and not 'sandboxed_sample' in i['tags']:
                 logger.debug('Whitelisting "{}" Nanocore indicator: {}'.format(i['type'], i['value']))
                 i['whitelisted'] = True
