@@ -55,6 +55,16 @@ def run(config, event_json, good_indicators):
     spf_entries = set()
     for domain in unique_domains:
         try:
+            try:
+                del os.environ['http_proxy']
+            except:
+                pass
+
+            try:
+                del os.environ['https_proxy']
+            except:
+                pass
+
             command = 'proxychains dig +noall +answer {} txt'.format(domain)
             output = subprocess.check_output(command, shell=True).decode('utf-8')
 
