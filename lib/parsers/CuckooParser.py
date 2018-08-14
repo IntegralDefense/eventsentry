@@ -34,7 +34,11 @@ class CuckooParser(BaseSandboxParser):
 
         # The rest of the info requires a bit more parsing.
         self.sandbox_urls = self.parse_sandbox_url()
-        self.screenshot_path = self.download_screenshot()
+        try:
+            self.screenshot_path = self.download_screenshot()
+        except:
+            self.logger.exception('Error downloading Cuckoo screenshot.')
+            self.screenshot_path = ''
         self.contacted_hosts = self.parse_contacted_hosts()
         self.dropped_files = self.parse_dropped_files()
         self.http_requests = self.parse_http_requests()
