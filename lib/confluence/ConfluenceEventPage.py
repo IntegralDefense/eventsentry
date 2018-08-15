@@ -42,7 +42,7 @@ class ConfluenceEventPage(BaseConfluencePage):
 
         # Only continue if the current page version is +1 from the old version. This implies
         # that the only change that happened was that someone checked the intel processing checkbox.
-        if int(self.get_page_version()) - int(version_number) == 1:
+        if int(self.get_page_version()) - int(version_number) <= 1:
             if self.is_event_intel_processing_checked():
                 overview_section = self.get_section('overview')
                 try:
