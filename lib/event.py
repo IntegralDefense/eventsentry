@@ -20,6 +20,8 @@ this_dir = os.path.dirname(__file__)
 if this_dir not in sys.path:
     sys.path.insert(0, this_dir)
 
+import lib.modules.detections
+import lib.modules.indicators
 from lib.constants import HOME_DIR
 from lib.file import File
 from lib.parsers import ACEAlert
@@ -30,7 +32,6 @@ from lib.indicator import make_url_indicators
 from lib.parsers import VxstreamParser
 from lib.parsers import WildfireParser
 from lib.eventwhitelist import EventWhitelist
-import lib.modules.detections
 
 
 class Event():
@@ -523,19 +524,10 @@ class Event():
     """
 
     def clean_indicators(self):
-        """ This function dynamically loads all of the cleanindicators modules. """
+        """ This function dynamically loads all of the indicators modules. """
 
-        cleanindicators_modules = os.listdir(os.path.join(this_dir, 'modules', 'cleanindicators'))
-
-        for file in cleanindicators_modules:
-            if file.endswith('.py'):
-                name = file[:-3]
-                try:
-                    module = importlib.import_module('modules.cleanindicators.{}'.format(name))
-                    module.run(self.json)
-                except:
-                    self.logger.exception('Unable to run cleanindicators module: {}'.format(file))
-
+        self.json = lib.modules.indicators.run_all(self.json)
+ 
     """
     #
     # EVENT DETECTIONS

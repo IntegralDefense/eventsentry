@@ -8,7 +8,6 @@ def run_all(event_json):
     tags = []
     detections = []
     extra = []
-    runtime = 0
 
     this_dir = os.path.dirname(__file__)
     modules = sorted(os.listdir(this_dir))
@@ -23,8 +22,7 @@ def run_all(event_json):
                 tags += mod.tags
                 detections += mod.detections
                 extra += mod.extra
-                runtime += mod.runtime
-                logger.info('{} detection module {} runtime: {}'.format(event_json['name'], name, runtime))
+                logger.debug('{} detection module {} runtime: {}'.format(event_json['name'], name, mod.runtime))
             except:
                 logger.exception('Error running detection module: {}'.format(name))
 
