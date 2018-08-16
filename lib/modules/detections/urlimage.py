@@ -26,7 +26,7 @@ class Module(DetectionModule):
             if any(ext in url for ext in image_extensions):
                 try:
                     temp_path = '/tmp/.{}.out'.format(self.name)
-                    command = 'proxychains wget -O {} -U "{}" -T {} "{}"'.format(temp_path, shlex.quote(user_agent), 5, shlex.quote(url))
+                    command = 'http_proxy='' && https_proxy='' && proxychains wget -O {} -U "{}" -T {} "{}"'.format(temp_path, shlex.quote(user_agent), 5, shlex.quote(url))
                     ret = None
                     ret = subprocess.call(command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                     if not ret == None:
