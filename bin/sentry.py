@@ -372,8 +372,7 @@ def process_event(event):
         RUN ALL OF THE EVENT DETECTION MODULES
         """
 
-        good_indicators = [ind for ind in e.json['indicators'] if not ind['whitelisted']]
-        e.event_detections(good_indicators)
+        e.event_detections()
 
         """
         RUN ALL OF THE CLEAN INDICATOR MODULES

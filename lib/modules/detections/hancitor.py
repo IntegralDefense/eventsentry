@@ -1,22 +1,19 @@
-import logging
+from lib.modules.DetectionModule import *
 
-logger = logging.getLogger()
+class Module(DetectionModule):
+    def __init__(self, name, event_json):
 
+        super().__init__(name=name, event_json=event_json)
 
-def run(config, event_json, good_indicators):
-    logger.debug('Running the Hancitor detection module.')
+    def run(self):
+        self.logger.debug('Running the {} detection module'.format(self.name))
 
-    tags = []
-    detections = []
-    extra = []
+        # Loop over each unique URL in the event.
+        for url in set([i['value'] for i in self.event_json['indicators'] if i['type'] == 'URI - URL']):
 
-    # Loop over each unique URL in the event.
-    for url in set([i['value'] for i in event_json['indicators'] if i['type'] == 'URI - URL']):
+            ss = ['/mlu/forum.php', '/d2/about.php', '/ls5/forum.php']
+            for s in ss:
+                if s.lower() in url.lower():
+                    self.detections.append('Detected Hancitor by the URI path "{}": {}'.format(s, url))
+                    self.tags.append('hancitor')
 
-        ss = ['/mlu/forum.php', '/d2/about.php', '/ls5/forum.php']
-        for s in ss:
-            if s.lower() in url.lower():
-                detections.append('Detected Hancitor by the URI path "{}": {}'.format(s, url))
-                tags.append('hancitor')
-
-    return tags, detections, extra

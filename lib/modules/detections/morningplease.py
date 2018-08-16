@@ -1,46 +1,42 @@
-import logging
+from lib.modules.DetectionModule import *
 
-logger = logging.getLogger()
+class Module(DetectionModule):
+    def __init__(self, name, event_json):
 
+        super().__init__(name=name, event_json=event_json)
 
-def run(config, event_json, good_indicators):
-    logger.debug('Running the Morning Please detection module.')
+    def run(self):
+        self.logger.debug('Running the {} detection module'.format(self.name))
 
-    tags = []
-    detections = []
-    extra = []
+        # Get the list of e-mail addresses from the config.
+        mp_emails = self.config.get('production', 'emails').split(',')
 
-    # Identify the module's name.
-    module_name = __name__.split('.')[-1]
+        # Try to identify Morning Please by the e-mail body.
+        for email in self.event_json['emails']:
 
-    # Get the list of e-mail addresses from the config.
-    mp_emails = config.get(module_name, 'emails').split(',')
+            # Make sure there is a Word document attachment.
+            if any('.doc' in attach['name'].lower() for attach in email['attachments']):
 
-    # Try to identify Morning Please by the e-mail body.
-    for email in event_json['emails']:
+                # These are the possible Morning Please string combinations.
+                string_combos = []
+                string_combos.append(['Morning,', 'Attached'])
+                string_combos.append(['Morning,', 'Please see attached.'])
+                string_combos.append(['Morning,', 'Please see attached and confirm.'])
 
-        # Make sure there is a Word document attachment.
-        if any('.doc' in attach['name'].lower() for attach in email['attachments']):
+                for ss in string_combos:
+                    if all(s in email['body'] for s in ss):
+                        self.detections.append('Detected a Morning Please phish by Word document attachment and the e-mail body: {}'.format(ss))
+                        self.tags.append('morningplease')
+                    elif all(s in email['html'] for s in ss):
+                        self.detections.append('Detected a Morning Please phish by Word document attachment and the e-mail body: {}'.format(ss))
+                        self.tags.append('morningplease')
 
-            # These are the possible Morning Please string combinations.
-            string_combos = []
-            string_combos.append(['Morning,', 'Attached'])
-            string_combos.append(['Morning,', 'Please see attached.'])
-            string_combos.append(['Morning,', 'Please see attached and confirm.'])
-
-            for ss in string_combos:
-                if all(s in email['body'] for s in ss):
-                    detections.append('Detected a Morning Please phish by Word document attachment and the e-mail body: {}'.format(ss))
+        """
+        for whois in event_json['whois']:
+            for mp_email in mp_emails:
+                if mp_email.lower() in whois['raw'].lower():
+                    extra.append(whois['raw'])
+                    detections.append('Detected a Morning Please domain "{}" by WHOIS e-mail: {}'.format(whois['domain'], mp_email))
                     tags.append('morningplease')
-                elif all(s in email['html'] for s in ss):
-                    detections.append('Detected a Morning Please phish by Word document attachment and the e-mail body: {}'.format(ss))
-                    tags.append('morningplease')
+        """
 
-    for whois in event_json['whois']:
-        for mp_email in mp_emails:
-            if mp_email.lower() in whois['raw'].lower():
-                extra.append(whois['raw'])
-                detections.append('Detected a Morning Please domain "{}" by WHOIS e-mail: {}'.format(whois['domain'], mp_email))
-                tags.append('morningplease')
-
-    return tags, detections, extra

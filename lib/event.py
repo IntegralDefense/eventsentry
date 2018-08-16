@@ -30,6 +30,7 @@ from lib.indicator import make_url_indicators
 from lib.parsers import VxstreamParser
 from lib.parsers import WildfireParser
 from lib.eventwhitelist import EventWhitelist
+import lib.modules.detections
 
 
 class Event():
@@ -541,35 +542,10 @@ class Event():
     #
     """
 
-    def event_detections(self, good_indicators):
+    def event_detections(self):
         """ This function dynamically loads all of the detection modules. """
 
-        all_tags = []
-        all_detections = []
-        all_extra = []
-
-        detection_modules = os.listdir(os.path.join(this_dir, 'modules', 'detections'))
-
-        # Load the detection module config file.
-        config_path = os.path.join(this_dir, 'modules', 'detections', 'etc', 'local', 'config.ini')
-        try:
-            config = configparser.ConfigParser()
-            config.read(config_path)
-        except:
-            self.logger.error('Error loading detection module config.ini at: {}'.format(config_path))
-            config = None
-
-        for file in detection_modules:
-            if file.endswith('.py'):
-                name = file[:-3]
-                try:
-                    module = importlib.import_module('modules.detections.{}'.format(name))
-                    tags, detections, extra = module.run(config, self.json, good_indicators)
-                    all_tags += tags
-                    all_detections += detections
-                    all_extra += extra
-                except:
-                    self.logger.exception('Unable to run detection module: {}'.format(file))
+        all_tags, all_detections, all_extra = lib.modules.detections.run_all(self.json)
 
         self.json['tags'] = sorted(list(set(self.json['tags'] + all_tags)))
         self.json['detections'] = sorted(list(set(all_detections)))
