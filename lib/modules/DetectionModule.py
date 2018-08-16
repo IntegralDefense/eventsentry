@@ -1,8 +1,3 @@
-import configparser
-import logging
-import os
-import time
-
 from lib.modules.BaseModule import *
 
 class DetectionModule(BaseModule):
