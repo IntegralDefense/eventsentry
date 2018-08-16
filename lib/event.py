@@ -20,6 +20,8 @@ this_dir = os.path.dirname(__file__)
 if this_dir not in sys.path:
     sys.path.insert(0, this_dir)
 
+import lib.modules.detections
+import lib.modules.indicators
 from lib.constants import HOME_DIR
 from lib.file import File
 from lib.parsers import ACEAlert
@@ -522,54 +524,20 @@ class Event():
     """
 
     def clean_indicators(self):
-        """ This function dynamically loads all of the cleanindicators modules. """
+        """ This function dynamically loads all of the indicators modules. """
 
-        cleanindicators_modules = os.listdir(os.path.join(this_dir, 'modules', 'cleanindicators'))
-
-        for file in cleanindicators_modules:
-            if file.endswith('.py'):
-                name = file[:-3]
-                try:
-                    module = importlib.import_module('modules.cleanindicators.{}'.format(name))
-                    module.run(self.json)
-                except:
-                    self.logger.exception('Unable to run cleanindicators module: {}'.format(file))
-
+        self.json = lib.modules.indicators.run_all(self.json)
+ 
     """
     #
     # EVENT DETECTIONS
     #
     """
 
-    def event_detections(self, good_indicators):
+    def event_detections(self):
         """ This function dynamically loads all of the detection modules. """
 
-        all_tags = []
-        all_detections = []
-        all_extra = []
-
-        detection_modules = os.listdir(os.path.join(this_dir, 'modules', 'detections'))
-
-        # Load the detection module config file.
-        config_path = os.path.join(this_dir, 'modules', 'detections', 'etc', 'local', 'config.ini')
-        try:
-            config = configparser.ConfigParser()
-            config.read(config_path)
-        except:
-            self.logger.error('Error loading detection module config.ini at: {}'.format(config_path))
-            config = None
-
-        for file in detection_modules:
-            if file.endswith('.py'):
-                name = file[:-3]
-                try:
-                    module = importlib.import_module('modules.detections.{}'.format(name))
-                    tags, detections, extra = module.run(config, self.json, good_indicators)
-                    all_tags += tags
-                    all_detections += detections
-                    all_extra += extra
-                except:
-                    self.logger.exception('Unable to run detection module: {}'.format(file))
+        all_tags, all_detections, all_extra = lib.modules.detections.run_all(self.json)
 
         self.json['tags'] = sorted(list(set(self.json['tags'] + all_tags)))
         self.json['detections'] = sorted(list(set(all_detections)))
