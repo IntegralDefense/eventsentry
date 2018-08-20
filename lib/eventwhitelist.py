@@ -5,7 +5,7 @@ import re
 from urllib.parse import urlsplit
 
 from critswhitelist import CritsWhitelist
-from urltools import is_valid
+from urlfinderlib import is_valid
 
 
 class EventWhitelist(CritsWhitelist):

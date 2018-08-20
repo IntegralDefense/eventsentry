@@ -3,8 +3,8 @@ import requests
 import logging
 import re
 import base64
-from urltools.urltools import find_urls
-from urltools.urltools import is_valid
+from urlfinderlib import find_urls
+from urlfinderlib import is_valid
 
 #from lib.url import find_urls
 #from lib.url import is_valid

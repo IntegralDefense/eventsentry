@@ -6,9 +6,8 @@ import tempfile
 import shutil
 import base64
 import re
-from urltools.urltools import find_urls
+from urlfinderlib import find_urls
 
-#from lib.url import find_urls
 from lib.parsers.BaseSandboxParser import *
 
 
