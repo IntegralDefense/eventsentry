@@ -3,7 +3,7 @@ import hashlib
 import ipaddress
 import json
 import time
-from urltools import is_valid
+from urlfinderlib import is_valid
 
 from lib import indicator
 from lib import RegexHelpers

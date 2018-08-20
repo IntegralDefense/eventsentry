@@ -9,8 +9,8 @@ import re
 
 from dateutil import tz
 from email.header import decode_header, make_header
-from urltools.urltools import find_urls
-from urltools.urltools import is_valid
+from urlfinderlib import find_urls
+from urlfinderlib import is_valid
 
 from lib import RegexHelpers
 from lib.constants import HOME_DIR

@@ -5,8 +5,8 @@ import json
 import logging
 import os
 import re
-from urltools.urltools import find_urls
-from urltools.urltools import is_valid
+from urlfinderlib import find_urls
+from urlfinderlib import is_valid
 
 from lib.indicator import Indicator
 from lib.indicator import make_url_indicators

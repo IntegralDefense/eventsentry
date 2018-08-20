@@ -3,7 +3,7 @@ import re
 import urllib
 from tld import get_fld
 from urllib.parse import urlsplit
-from urltools import is_valid
+from urlfinderlib import is_valid
 
 class Indicator:
     def __init__(self, type, value, status='New', tags=[], relationships=[]):

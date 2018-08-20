@@ -12,7 +12,7 @@ import sys
 import tempfile
 
 from flockcontext import FlockOpen
-from urltools import find_urls
+from urlfinderlib import find_urls
 
 # Make sure the current directory is in the
 # path so that we can run this from anywhere.
