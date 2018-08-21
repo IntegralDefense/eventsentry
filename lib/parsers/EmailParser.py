@@ -485,13 +485,13 @@ class EmailParser():
                     # different locations are are just called 'name='... Hence removing
                     # old code and replacing with a regex statement to account for either
                     # name in any location in the message part.
-                    attachment_name_pattern = re.compile(r'(file)?name="(.*?)"')
+                    attachment_name_pattern = re.compile(r'(file)?name="?([^"]+)"?')
                     for tup in part_items:
                         for item in tup:
                             attachment_name = attachment_name_pattern.search(item)
                             if attachment_name:
                                 attachment_dict['name'] = RegexHelpers.decode_utf_b64_string(attachment_name.groups()[1])
-
+                    
                     # Make the attachment indicators.
                     self.indicators.append(Indicator('Windows - FileName', attachment_dict['name'], tags=['attachment']))
                     self.indicators.append(Indicator('Hash - MD5', attachment_dict['md5'], tags=['attachment']))
