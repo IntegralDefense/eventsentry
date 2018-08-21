@@ -47,8 +47,15 @@ class Module(DetectionModule):
         # Get all of the New/Analyzed domains and IP addresses from the event.
         good_indicators = [i for i in self.event_json['indicators'] if not i['whitelisted']]
         domains_ips = list(set([i['value'].lower() for i in good_indicators if (i['type'] == 'URI - Domain Name' or i['type'] == 'Address - ipv4-addr') and (i['status'] == 'New' or i['status'] == 'Analyzed') and not 'from_domain' in i['tags']]))
-        if domains_ips:
-            domains_ips_string = ' OR '.join(domains_ips)
+
+        # Get all of the Dropbox/Google Drive/etc URI paths from the event.
+        extra_domains = ['dropbox.com', 'www.dropbox.com', 'drive.google.com']
+        uri_paths = list(set([i['value'].lower() for i in good_indicators if i['type'] == 'URI - Path' and any(rel in extra_domains for rel in i['relationships']) and (i['status'] == 'New' or i['status'] == 'Analyzed')]))
+
+        # Collect all of the domains/IPs/paths we want to search for.
+        domains_ips_paths = list(set(domains_ips + uri_paths))
+        if domains_ips_paths:
+            domains_ips_paths_string = ' OR '.join(domains_ips_paths)
         else:
             return
 
@@ -72,7 +79,7 @@ class Module(DetectionModule):
                 output_lines = []
 
                 # This is the actual command line version of the Splunk query.
-                command = 'http_proxy="" https_proxy="" /opt/splunklib/splunk.py --enviro {} -s "{}" "index=bluecoat OR index=bro_http OR index=carbonblack NOT authentication_failed {} {}"'.format(company, start_time, domains_ips_string, whitelisted_things_string)
+                command = 'http_proxy="" https_proxy="" /opt/splunklib/splunk.py --enviro {} -s "{}" "index=bluecoat OR index=bro_http OR index=carbonblack NOT authentication_failed {} {}"'.format(company, start_time, domains_ips_paths_string, whitelisted_things_string)
                 
                 try:
                     output = subprocess.check_output(command, shell=True).decode('utf-8')
@@ -123,13 +130,13 @@ class Module(DetectionModule):
                 output_lines = [line.lower() for line in output_lines]
 
                 # Loop over all of the domains and IPs we searched for to identify the clickers.
-                for domain_ip in domains_ips:
+                for domain_ip_path in domains_ips_paths:
 
                     # Loop over each clicker to check if they clicked on this domain/IP.
                     for user_id in clicker_ids:
                     
                         # Get all of the Bluecoat log lines for this domain/IP + clicker.
-                        bluecoat_lines = [line for line in output_lines if 'bluecoat' in line and domain_ip in line and user_id in line]
+                        bluecoat_lines = [line for line in output_lines if 'bluecoat' in line and domain_ip_path in line and user_id in line]
 
                         if bluecoat_lines:
 
@@ -161,19 +168,19 @@ class Module(DetectionModule):
 
                             # Add the appropriate event detections.
                             if submitted:
-                                self.detections.append('! CLICKER {} CREDENTIALS SUBMITTED ! {} {} {}'.format(company.upper(), user_id, domain_ip, reminder_message))
+                                self.detections.append('! CLICKER {} CREDENTIALS SUBMITTED ! {} {} {}'.format(company.upper(), user_id, domain_ip_path, reminder_message))
                                 self.tags.append('actionsonobjectives')
                                 self.tags.append('exfil')
                             else:
-                                self.detections.append('! CLICKER {} {} {} ! {} {} {}'.format(company.upper(), click_type.upper(), status.upper(), user_id, domain_ip, reminder_message))
+                                self.detections.append('! CLICKER {} {} {} ! {} {} {}'.format(company.upper(), click_type.upper(), status.upper(), user_id, domain_ip_path, reminder_message))
 
                         # Get all of the Carbon Black log lines for this user.
-                        carbonblack_lines = [line for line in output_lines if 'carbonblack' in line and domain_ip in line and user_id in line]
+                        carbonblack_lines = [line for line in output_lines if 'carbonblack' in line and domain_ip_path in line and user_id in line]
 
                         # Only bother adding an event detection for CB logs if there were no Bluecoat logs for this user.
                         if carbonblack_lines and not bluecoat_lines:
                             duo_ids.append(user_id)
-                            self.detections.append('! CLICKER {} OFF NETWORK ! {} {} <--- CONTACT USER AND LOCK ACCOUNT'.format(company.upper(), user_id, domain_ip))
+                            self.detections.append('! CLICKER {} OFF NETWORK ! {} {} <--- CONTACT USER AND LOCK ACCOUNT'.format(company.upper(), user_id, domain_ip_path))
 
                 # Make sure we actually added a detection for each user.
                 for user_id in clicker_ids:
