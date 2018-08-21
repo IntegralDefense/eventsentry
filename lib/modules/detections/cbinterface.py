@@ -34,7 +34,7 @@ class Module(DetectionModule):
             for filename in filenames:
 
                 # Build and run the cbinterface command.
-                command = 'cbinterface -e {} query filemod:{}'.format(company, filename)
+                command = 'cbinterface -e {} query filemod:"{}"'.format(company, filename)
                 try:
                     output = subprocess.check_output(command, shell=True).decode('utf-8')
 
