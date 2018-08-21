@@ -49,7 +49,7 @@ class Module(DetectionModule):
         domains_ips = list(set([i['value'].lower() for i in good_indicators if (i['type'] == 'URI - Domain Name' or i['type'] == 'Address - ipv4-addr') and (i['status'] == 'New' or i['status'] == 'Analyzed') and not 'from_domain' in i['tags']]))
 
         # Get all of the Dropbox/Google Drive/etc URI paths from the event.
-        extra_domains = ['dropbox.com', 'www.dropbox.com', 'drive.google.com']
+        extra_domains = ['dropbox.com', 'www.dropbox.com', 'drive.google.com', 'gitlab.com', 'www.gitlab.com']
         uri_paths = list(set([i['value'].lower() for i in good_indicators if i['type'] == 'URI - Path' and any(rel in extra_domains for rel in i['relationships']) and (i['status'] == 'New' or i['status'] == 'Analyzed')]))
 
         # Collect all of the domains/IPs/paths we want to search for.
