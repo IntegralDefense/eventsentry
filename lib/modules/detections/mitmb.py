@@ -3,6 +3,7 @@ import logging
 import subprocess
 import tld
 
+from lib.constants import PROXYCHAINS, PROXYCHAINS_CONFIG
 from lib.modules.DetectionModule import *
 
 class Module(DetectionModule):
@@ -62,7 +63,7 @@ class Module(DetectionModule):
                 except:
                     pass
     
-                command = 'proxychains -q dig +noall +answer {} txt'.format(domain)
+                command = '{} -f {} -q dig +noall +answer {} txt'.format(PROXYCHAINS, PROXYCHAINS_CONFIG, domain)
                 output = subprocess.check_output(command, shell=True).decode('utf-8')
     
                 # If there was output, we should have the SPF record.
@@ -105,7 +106,7 @@ class Module(DetectionModule):
         mx_entries = set()
         for domain in unique_domains:
             try:
-                command = 'proxychains -q dig +noall +answer {} MX'.format(domain)
+                command = '{} -f {} -q dig +noall +answer {} MX'.format(PROXYCHAINS, PROXYCHAINS_CONFIG, domain)
                 output = subprocess.check_output(command, shell=True).decode('utf-8')
     
                 # If there was output, we should have the MX record.

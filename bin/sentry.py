@@ -25,7 +25,7 @@ if this_dir not in sys.path:
 from critsapi.critsdbapi import CRITsDBAPI
 from critsapi.critsapi import CRITsAPI
 from lib import indicator
-from lib.constants import HOME_DIR
+from lib.constants import HOME_DIR, GETITINTOCRITS, BUILD_RELATIONSHIPS
 from lib.event import Event
 from lib.confluence.ConfluenceEventPage import ConfluenceEventPage
 from lib.intel import EventIntel
@@ -491,13 +491,13 @@ def process_event(event):
                 event_time = event_time[0:19]
 
             # Build the getitintocrits.py command.
-            giic_command = 'getitintocrits.py --no-prompt -s "{}" -r "{}" -e "{}" --description "{}" --type "{}" --date "{}" --campaign "{}" --campaign-conf "{}" --bucket-list "{}"'.format(
-                source, wiki.get_page_url(), e.json['name'], description, event_type, event_time, campaign,
+            giic_command = '{} --no-prompt -s "{}" -r "{}" -e "{}" --description "{}" --type "{}" --date "{}" --campaign "{}" --campaign-conf "{}" --bucket-list "{}"'.format(
+                GETITINTOCRITS, source, wiki.get_page_url(), e.json['name'], description, event_type, event_time, campaign,
                 campaign_conf, ','.join(sorted(list(set(e.json['tags'])))))
             commands.append(giic_command)
 
             # Command to craft the relationships between all the indicators and objects.
-            br_command = 'build_relationships.py {}'.format(os.path.join(crits_root, 'relationships.txt'))
+            br_command = '{} {}'.format(BUILD_RELATIONSHIPS, os.path.join(crits_root, 'relationships.txt'))
             commands.append(br_command)
 
             # Continue if we have the required pieces to run getitintocrits.py.
@@ -505,7 +505,7 @@ def process_event(event):
                 # Run all of the commands.
                 command_string = ' && '.join(commands)
                 os.system(command_string)
-                
+
                 # Query CRITs to make sure the event actually exists now.
                 crits_events = [e['title'] for e in list(mongo_connection.find_all('events'))]
                 if e.json['name'] in crits_events:
