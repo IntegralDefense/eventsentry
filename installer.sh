@@ -45,7 +45,7 @@ echo "[*] Creating the installation directory."
 mkdir -p $INSTALL_DIR
 
 # Copy the files to the installation directory.
-cp -r ./* $INSTALL_DIR
+cp -r . $INSTALL_DIR
 
 # cd into the installation directory.
 cd $INSTALL_DIR
