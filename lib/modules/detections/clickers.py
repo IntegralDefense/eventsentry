@@ -3,6 +3,7 @@ import logging
 import re
 import subprocess
 
+from lib.constants import SPLUNKLIB
 from lib.modules.DetectionModule import *
 
 class Module(DetectionModule):
@@ -79,7 +80,7 @@ class Module(DetectionModule):
                 output_lines = []
 
                 # This is the actual command line version of the Splunk query.
-                command = 'http_proxy="" https_proxy="" /opt/splunklib/splunk.py --enviro {} -s "{}" "index=bluecoat OR index=bro_http OR index=carbonblack NOT authentication_failed {} {}"'.format(company, start_time, domains_ips_paths_string, whitelisted_things_string)
+                command = '{} --enviro {} -s "{}" "index=bluecoat OR index=bro_http OR index=carbonblack NOT authentication_failed {} {}"'.format(SPLUNKLIB, company, start_time, domains_ips_paths_string, whitelisted_things_string)
                 
                 try:
                     output = subprocess.check_output(command, shell=True).decode('utf-8')
@@ -200,7 +201,7 @@ class Module(DetectionModule):
                     user_id_string = ' OR '.join(list(set(duo_ids)))
 
                     # This is the actual command line version of the Splunk query.
-                    command = 'http_proxy="" https_proxy="" /opt/splunklib/splunk.py --enviro {} -s "{}" "index=duo* {}"'.format(company, start_time, user_id_string)
+                    command = '{} --enviro {} -s "{}" "index=duo* {}"'.format(SPLUNKLIB, company, start_time, user_id_string)
 
                     try:
                         output = subprocess.check_output(command, shell=True).decode('utf-8')

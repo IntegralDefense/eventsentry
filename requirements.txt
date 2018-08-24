@@ -16,4 +16,5 @@ tld==0.9
 urllib3==1.23
 urlfinderlib
 critswhitelist
-git+https://github.com/lolnate/critsapi.git
+cbinterface
+critsapi
