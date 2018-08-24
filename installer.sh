@@ -77,21 +77,21 @@ sudo mv *.dat $geo_path
 
 # Install proxychains-ng
 echo "[*] Downloading proxychains-ng."
-cd $INSTALL_DIR/bin
+cd $INSTALL_DIR/bin/external
 git clone https://github.com/rofl0r/proxychains-ng.git
 echo "[*] Building proxychains-ng from source."
-cd $INSTALL_DIR/bin/proxychains-ng
+cd $INSTALL_DIR/bin/external/proxychains-ng
 ./configure --prefix=/usr --sysconfdir=/etc
 make
 
 # Install getitintocrits.py
 echo "[*] Downloading getitintocrits."
-cd $INSTALL_DIR/bin
+cd $INSTALL_DIR/bin/external
 git clone https://github.com/IntegralDefense/getitintocrits.git
 
 # Install splunklib
 echo "[*] Downloading splunklib."
-cd $INSTALL_DIR/bin
+cd $INSTALL_DIR/bin/external
 git clone https://github.com/IntegralDefense/splunklib.git
 
 # Copy config files into their local directories
@@ -99,7 +99,7 @@ cd $INSTALL_DIR
 cp etc/config.ini etc/local/
 cp etc/proxychains.conf etc/local/
 cp lib/modules/detections/etc/*.ini lib/modules/detections/etc/local/
-cp bin/getitintocrits/etc/*.ini bin/getitintocrits/etc/local/
+cp bin/external/getitintocrits/etc/*.ini bin/external/getitintocrits/etc/local/
 cp etc/splunklib.ini $HOME/.splunklib.ini
 echo ""
 echo ""
@@ -107,20 +107,23 @@ echo ""
 echo "[*] Installation complete!"
 
 echo ""
-echo ""
 
 echo "[!] Before you can run Event Sentry, you must edit some config files:"
 echo "        Main Event Sentry config: $INSTALL_DIR/etc/local/config.ini"
 echo "        Detection modules config: $INSTALL_DIR/lib/modules/detections/etc/local/*.ini"
 echo "        proxychains config:       $INSTALL_DIR/etc/local/proxychains.conf"
-echo "        getitintocrits config:    $INSTALL_DIR/bin/getitintocrits/etc/local/config.ini"
+echo "        getitintocrits config:    $INSTALL_DIR/bin/external/getitintocrits/etc/local/config.ini"
 echo "        splunklib config:         $HOME/.splunklib.ini"
 echo "        cbinterface config:       /etc/carbonblack/credentials.response"
 
 echo ""
+
+echo "[!] When you have edited the config files, you can test Event Sentry with:"
+echo "        source $INSTALL_DIR/venv/bin/activate"
+echo "        $INSTALL_DIR/tests/run.py"
 echo ""
 
-echo "[!] When you have edited the config files, you can start/stop Event Sentry with:"
+echo "[!] When the unit tests are passing, you can start/stop Event Sentry with:"
 echo "        $INSTALL_DIR/bin/start"
 echo "        $INSTALL_DIR/bin/stop"
 echo ""
