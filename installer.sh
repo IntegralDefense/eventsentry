@@ -50,6 +50,10 @@ cp -r . $INSTALL_DIR
 # cd into the installation directory.
 cd $INSTALL_DIR
 
+# Install some apt-get dependencies.
+echo "[*] Installing apt-get dependencies."
+sudo apt install -y build-essential gcc make libyaml-dev geoip-database geoip-bin python3-venv python3-pip libmysqlclient-dev p7zip-full
+
 # Create and activate a new virtual environment.
 echo "[*] Creating new Python virtual environment."
 python3 -m venv venv
@@ -57,11 +61,8 @@ python3 -m venv venv
 
 # Install requirements.txt
 echo "[*] Installing Python dependencies."
+pip3 install wheel
 pip3 install -r requirements.txt 
-
-# Install some apt-get dependencies.
-echo "[*] Installing apt-get dependencies."
-sudo apt install -y build-essential gcc make libyaml-dev geoip-database geoip-bin
 
 # Update the GeoIP database files.
 echo "[*] Downloading new GeoIP database files."
