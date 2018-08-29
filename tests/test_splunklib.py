@@ -9,18 +9,23 @@ class SplunklibTestCase(unittest.TestCase):
     """ Tests for splunklib. """
 
     def test_splunklib_exists(self):
+        """ Make sure the "splunk.py" command exists """
+
         try:
             subprocess.check_output('{} --help'.format(SPLUNKLIB), shell=True)
         except:
             self.fail('Error when calling splunk.py')
 
     def test_splunklib_config_exists(self):
+        """ Make sure your .splunklib.ini config exists """
+
         home = os.path.expanduser('~')
         config_path = os.path.join(home, '.splunklib.ini')
-        if not os.path.exists(config_path):
-            self.fail('splunklib config does not exist: {}'.format(config_path))
+        self.assertTrue(os.path.exists(config_path))
 
     def test_splunklib_environments(self):
+        """ Make sure we can query all of your configured Splunk environments """
+
         home = os.path.expanduser('~')
         config_path = os.path.join(home, '.splunklib.ini')
         config = configparser.ConfigParser()

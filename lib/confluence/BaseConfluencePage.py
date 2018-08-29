@@ -19,6 +19,21 @@ class BaseConfluencePage(ConfluenceConnector):
         # Try to cache the page.
         self.cache_page()
 
+    ########################
+    ##                    ##
+    ##  DELETE FUNCTIONS  ##
+    ##                    ##
+    ########################
+    def delete_page(self):
+        page_id = self.get_page_id()
+        if page_id:
+            r = requests.delete('{}/{}'.format(self.api_url, page_id), auth=(self.username, self.password), verify=self.requests_verify)
+            if r.status_code == 204:
+                self.logger.debug('Successfully deleted wiki page: {}'.format(self.page_title))
+            else:
+                self.logger.error('Error deleting wiki page "{}": {}'.format(self.page_title, r.text))
+            return r.status_code
+
     #####################
     ##                 ##
     ##  GET FUNCTIONS  ##
