@@ -68,7 +68,7 @@ class Module(DetectionModule):
 
                             if 'GUI Link: ' in line:
                                 gui_link = line.replace('GUI Link: ', '').strip()
-                                self.detections.append('! DETECTED MD5 {} ! {}'.format(filename, gui_link))
+                                self.detections.append('! DETECTED MD5 {} ! {}'.format(md5, gui_link))
                                 self.tags.append('incidents')
                                 self.tags.append('exploitation')
                                 self.extra.append(output)
