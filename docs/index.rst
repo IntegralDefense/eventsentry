@@ -1,7 +1,7 @@
 Event Sentry
 =======================================================
 
-Release v\ |release|.
+Release |release|.
 
 Event Sentry blah blah blah cool stuff blah blah.
 
