@@ -1,6 +1,7 @@
 import hashlib
 import shlex
 import subprocess
+import tempfile
 
 from lib.constants import PROXYCHAINS, PROXYCHAINS_CONFIG
 from lib.modules.DetectionModule import *
@@ -24,19 +25,16 @@ class Module(DetectionModule):
 
         # Loop over the unique URLs to download and hash any images.
         for url in set([i['value'] for i in self.event_json['indicators'] if i['type'] == 'URI - URL']):
-            if any(ext in url for ext in image_extensions):
+            if any(ext.lower() in url.lower() for ext in image_extensions):
                 try:
-                    temp_path = '/tmp/.{}.out'.format(self.name)
-                    command = '{} -f {} wget -O {} -U "{}" -T {} "{}"'.format(PROXYCHAINS, PROXYCHAINS_CONFIG, temp_path, shlex.quote(user_agent), 5, shlex.quote(url))
-                    ret = None
-                    ret = subprocess.call(command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                    if not ret == None:
-                        if os.path.exists(temp_path):
-                            with open(temp_path, 'rb') as image:
-                                m = hashlib.md5()
-                                m.update(image.read())
-                                md5 = m.hexdigest().lower()
-                                image_hashes[md5] = url
+                    temp = tempfile.NamedTemporaryFile()
+                    command = '{} -f {} wget -O {} -U "{}" -T {} "{}"'.format(PROXYCHAINS, PROXYCHAINS_CONFIG, temp.name, shlex.quote(user_agent), 5, shlex.quote(url))
+                    subprocess.call(command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    with open(temp.name, 'rb') as image:
+                        m = hashlib.md5()
+                        m.update(image.read())
+                        md5 = m.hexdigest().lower()
+                        image_hashes[md5] = url
                 except:
                     self.logger.exception('Error downloading image: {}'.format(url))
 
