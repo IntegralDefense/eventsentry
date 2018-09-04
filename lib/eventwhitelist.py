@@ -9,8 +9,8 @@ from urlfinderlib import is_valid
 
 
 class EventWhitelist(CritsWhitelist):
-    def __init__(self, whitelist_tags=['whitelist:e2w'], mongo_connection=None, mongo_uri=None, mongo_db=None, urlshortener_tags=['urlshortener:e2w']):
-        super().__init__(whitelist_tags=whitelist_tags, mongo_connection=mongo_connection, mongo_uri=mongo_uri, mongo_db=mongo_db, urlshortener_tags=urlshortener_tags)
+    def __init__(self, whitelist_tags=['whitelist:e2w'], mongo_connection=None, mongo_uri=None, mongo_db=None):
+        super().__init__(whitelist_tags=whitelist_tags, mongo_connection=mongo_connection, mongo_uri=mongo_uri, mongo_db=mongo_db)
 
     """
     #
