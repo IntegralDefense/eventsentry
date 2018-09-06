@@ -369,16 +369,16 @@ def process_event(event):
                 i['status'] = queried_indicators[type_value]
 
         """
-        RUN ALL OF THE EVENT DETECTION MODULES
-        """
-
-        e.event_detections()
-
-        """
         RUN ALL OF THE CLEAN INDICATOR MODULES
         """
 
         e.clean_indicators()
+
+        """
+        RUN ALL OF THE EVENT DETECTION MODULES
+        """
+
+        e.event_detections()
 
         """
         GATHER UP ALL OF THE EVENT TAGS
