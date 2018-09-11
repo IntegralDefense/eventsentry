@@ -105,7 +105,7 @@ class Module(DetectionModule):
                 for ip in ips:
 
                     # Build and run the cbinterface command.
-                    command = 'cbinterface -e {} query \'(ipaddr:"{}" OR cmdline:"{}") {}\''.format(company, ip, ip, cb_whitelisted_things_string)
+                    command = 'cbinterface -e {} query \'(ipaddr:{} OR cmdline:{}) {}\''.format(company, ip, ip, cb_whitelisted_things_string)
                     try:
                         output = subprocess.check_output(command, shell=True).decode('utf-8')
 
