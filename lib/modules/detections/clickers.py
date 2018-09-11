@@ -41,20 +41,23 @@ class Module(DetectionModule):
         # These are legit things that we expect to generate some results.
         whitelisted_things = list(set(self.config.get('production', 'whitelisted_things').split(',')))
         if whitelisted_things:
-            whitelisted_things_string = 'NOT ' + ' NOT '.join(whitelisted_things)
+            cb_whitelisted_things_string = '-hostname:' + ' -hostname:'.join(whitelisted_things)
+            splunk_whitelisted_things_string = 'NOT ' + ' NOT '.join(whitelisted_things)
         else:
-            whitelisted_things_string = ''
+            cb_whitelisted_things_string = ''
+            splunk_whitelisted_things_string = ''
 
         # Get all of the New/Analyzed domains and IP addresses from the event.
-        good_indicators = [i for i in self.event_json['indicators'] if not i['whitelisted']]
-        domains_ips = list(set([i['value'].lower() for i in good_indicators if (i['type'] == 'URI - Domain Name' or i['type'] == 'Address - ipv4-addr') and (i['status'] == 'New' or i['status'] == 'Analyzed') and not 'from_domain' in i['tags']]))
+        good_indicators = [i for i in self.event_json['indicators'] if not i['whitelisted'] and (i['status'] == 'New' or i['status'] == 'Analyzed' or i['status'] == 'In Progress')]
+        domains = list(set([i['value'].lower() for i in good_indicators if i['type'] == 'URI - Domain Name' and not 'from_domain' in i['tags']]))
+        ips = list(set([i['value'].lower() for i in good_indicators if i['type'] == 'Address - ipv4-addr']))
 
         # Get all of the Dropbox/Google Drive/etc URI paths from the event.
         extra_domains = ['dropbox.com', 'www.dropbox.com', 'drive.google.com', 'gitlab.com', 'www.gitlab.com']
-        uri_paths = list(set([i['value'].lower() for i in good_indicators if i['type'] == 'URI - Path' and any(rel in extra_domains for rel in i['relationships']) and (i['status'] == 'New' or i['status'] == 'Analyzed')]))
+        uri_paths = list(set([i['value'].lower() for i in good_indicators if i['type'] == 'URI - Path' and any(rel in extra_domains for rel in i['relationships'])]))
 
-        # Collect all of the domains/IPs/paths we want to search for.
-        domains_ips_paths = list(set(domains_ips + uri_paths))
+        # Collect all of the domains/IPs/paths we want to search for in Splunk.
+        domains_ips_paths = list(set(domains + ips + uri_paths))
         if domains_ips_paths:
             domains_ips_paths_string = ' OR '.join(domains_ips_paths)
         else:
@@ -66,21 +69,70 @@ class Module(DetectionModule):
             # Run the Splunk search for each company we found in the alerts.
             for company in company_names:
 
-                """
-                BUILD AND RUN THE SPLUNK SEARCH
-                """
-
                 # Store the employee IDs who clicked for each domain/IP.
                 clicker_ids = []
 
                 # Store the employee IDs who clicked and need a follow up Duo search.
                 duo_ids = []
 
+                """
+                BUILD AND RUN THE CBINTERFACE SEARCH FOR EACH DOMAIN/IP
+                """
+
+                for domain in domains:
+
+                    # Build and run the cbinterface command.
+                    # '(domain:loghomehq.com OR cmdline:loghomehq.com) -hostname:pcn0351378 -hostname:pcn0351374'
+                    command = 'cbinterface -e {} query \'(domain:"{}" OR cmdline:"{}") {}\''.format(company, domain, domain, cb_whitelisted_things_string)
+                    try:
+                        output = subprocess.check_output(command, shell=True).decode('utf-8')
+
+                        # If there was output, it means the search returned something.
+                        if output:
+
+                            # Loop over each of the lines to try and find the GUI Link line.
+                            for line in output.splitlines():
+
+                                if 'GUI Link: ' in line:
+                                    gui_link = line.replace('GUI Link: ', '').strip()
+                                    self.detections.append('! DETECTED NETCONN TO DOMAIN {} ! {}'.format(domain, gui_link))
+                                    self.tags.append('incidents')
+                                    self.tags.append('exploitation')
+                                    self.extra.append(output)
+                    except:
+                        self.logger.exception('Error running cbinterface command: {}'.format(command))
+
+                for ip in ips:
+
+                    # Build and run the cbinterface command.
+                    command = 'cbinterface -e {} query \'(ipaddr:"{}" OR cmdline:"{}") {}\''.format(company, ip, ip, cb_whitelisted_things_string)
+                    try:
+                        output = subprocess.check_output(command, shell=True).decode('utf-8')
+
+                        # If there was output, it means the search returned something.
+                        if output:
+
+                            # Loop over each of the lines to try and find the GUI Link line.
+                            for line in output.splitlines():
+
+                                if 'GUI Link: ' in line:
+                                    gui_link = line.replace('GUI Link: ', '').strip()
+                                    self.detections.append('! DETECTED NETCONN TO IP {} ! {}'.format(ip, gui_link))
+                                    self.tags.append('incidents')
+                                    self.tags.append('exploitation')
+                                    self.extra.append(output)
+                    except:
+                        self.logger.exception('Error running cbinterface command: {}'.format(command))
+
+                """
+                BUILD AND RUN THE SPLUNK SEARCH
+                """
+
                 # Store the Splunk output lines.
                 output_lines = []
 
                 # This is the actual command line version of the Splunk query.
-                command = '{} --enviro {} -s "{}" "index=bluecoat OR index=bro_http OR index=carbonblack NOT authentication_failed {} {}"'.format(SPLUNKLIB, company, start_time, domains_ips_paths_string, whitelisted_things_string)
+                command = '{} --enviro {} -s "{}" "index=bluecoat OR index=bro_http OR index=carbonblack NOT authentication_failed {} {}"'.format(SPLUNKLIB, company, start_time, domains_ips_paths_string, splunk_whitelisted_things_string)
                 
                 try:
                     output = subprocess.check_output(command, shell=True).decode('utf-8')
