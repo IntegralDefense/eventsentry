@@ -15,10 +15,11 @@ class Module(DetectionModule):
         for email in self.event_json['emails']:
 
             # Make sure there is a Word document attachment.
-            if any('.doc' in attach['name'].lower() for attach in email['attachments']):
+            if any('msword' in attach['content_type'].lower() for attach in email['attachments']):
 
                 # These are the possible Morning Please string combinations.
                 string_combos = []
+                string_combos.append(['Morning.', 'Please see attached and confirm.'])
                 string_combos.append(['Morning,', 'Attached'])
                 string_combos.append(['Morning,', 'Please see attached.'])
                 string_combos.append(['Morning,', 'Please see attached and confirm.'])
