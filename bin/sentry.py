@@ -174,7 +174,17 @@ def process_event(event):
 
     # If the event has changed or we are forcing a refresh, we need to update the wiki page.
     if e.changed or wiki.is_page_refresh_checked():
-        logger.info('Event has changed. Updating wiki: {}'.format(e.json['name']))
+
+        # 99% of the same things need to be updated if the event has changed or if someone
+        # forced a refresh using the wiki page. However, there are a couple differences between
+        # the two, so if the event has changed somehow, we want to make sure that takes
+        # precedence over the wiki refresh button.
+        if e.changed:
+            wiki_refresh = False
+            logger.info('Event has changed. Updating wiki: {}'.format(e.json['name']))
+        else:
+            wiki_refresh = True
+            logger.info('Forcing event refresh. Updating wiki: {}'.format(e.json['name']))
 
         """
         ADD ANY WHITELISTED INDICATORS FROM THE SUMMARY TABLE TO CRITs
@@ -378,6 +388,8 @@ def process_event(event):
         RUN ALL OF THE EVENT DETECTION MODULES
         """
 
+        # Save a copy of the old event tags to compare against to see if any were manually removed.
+        old_tags = e.json['tags'][:]
         e.event_detections()
 
         """
@@ -386,7 +398,8 @@ def process_event(event):
      
         # Add the wiki tags to the event tags. This ensures that tags that we add to the wiki page
         # get added to the indicators in the Indicator Summary table.
-        e.json['tags'] += wiki.get_labels()
+        wiki_tags = wiki.get_labels()
+        e.json['tags'] += wiki_tags
         e.json['tags'] = list(set(e.json['tags']))
 
         # Check if the event tags have a campaign name in them.
@@ -403,6 +416,18 @@ def process_event(event):
             e.json['tags'].remove(e.json['campaign']['wiki'])
         except:
             pass
+
+        # Now check if any of the wiki tags were manually removed. This can happen if we have an FP
+        # event detection, so we want to make sure we don't keep applying those FP tags to the page.
+        # NOTE: We only do this check if the event has NOT changed and the wiki refresh button was checked.
+        if wiki_refresh:
+            for tag in e.json['tags'][:]:
+                if not tag in wiki_tags:
+                    try:
+                        e.json['tags'].remove(tag)
+                        logger.info('Tag manually removed from wiki page: {}'.format(tag))
+                    except:
+                        pass
 
         """
         UPDATE THE WIKI PAGE
