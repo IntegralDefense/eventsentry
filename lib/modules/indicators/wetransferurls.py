@@ -1,3 +1,5 @@
+import re
+
 from lib.modules.IndicatorModule import *
 
 class Module(IndicatorModule):
