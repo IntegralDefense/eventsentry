@@ -119,7 +119,7 @@ class Module(DetectionModule):
                     output_lines = []
 
                     # This is the actual command line version of the Splunk query.
-                    command = '{} --enviro {} -s "{}" "index=email* attachment_hashes=\\"*{}*\\" | table message_id subject"'.format(SPLUNKLIB, company, start_time, attachment_hash)
+                    command = '{} --enviro {} -s "{}" --json "index=email* attachment_hashes=\\"*{}*\\" | table message_id subject"'.format(SPLUNKLIB, company, start_time, attachment_hash)
                     try:
                         output = subprocess.check_output(command, shell=True).decode('utf-8')
 
