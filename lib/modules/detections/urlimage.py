@@ -28,7 +28,7 @@ class Module(DetectionModule):
             if any(ext.lower() in url.lower() for ext in image_extensions):
                 try:
                     temp = tempfile.NamedTemporaryFile()
-                    command = '{} -f {} wget -O {} -U "{}" -T {} "{}"'.format(PROXYCHAINS, PROXYCHAINS_CONFIG, temp.name, shlex.quote(user_agent), 5, shlex.quote(url))
+                    command = '{} -f {} wget -O {} -U {} -T {} {}'.format(PROXYCHAINS, PROXYCHAINS_CONFIG, temp.name, shlex.quote(user_agent), 5, shlex.quote(url))
                     subprocess.call(command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                     with open(temp.name, 'rb') as image:
                         m = hashlib.md5()
