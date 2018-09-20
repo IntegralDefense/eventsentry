@@ -43,6 +43,7 @@ class Module(DetectionModule):
                     # Run the detections for each form of the HTML text we have.
                     for text in texts:
 
+                        # Lowercase the text for better comparisons.
                         text = text.lower()
 
                         # Loop over each section in the config file.
