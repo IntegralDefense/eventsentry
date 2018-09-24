@@ -45,7 +45,8 @@ class Module(DetectionModule):
             if email['from_address'] and email['subject']:
                 sender_subject_pairs.add((email['from_address'], email['subject']))
             for attach in email['attachments']:
-                attachment_hashes.add(attach['sha256'])
+                if attach['sha256']:
+                    attachment_hashes.add(attach['sha256'])
                 if email['from_address'] and attach['name']:
                     sender_attachment_pairs.add((email['from_address'], attach['name']))
 
