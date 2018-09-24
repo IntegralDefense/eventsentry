@@ -416,7 +416,8 @@ class EmailParser():
         for part in email_obj.walk():
             charset = self._get_charset(part, self._get_charset(email_obj))
             attachment = self._parse_attachment(part, charset)
-            if attachment:
+            # Only add the attachment to the list if we were able to get the MD5.
+            if attachment and attachment['md5']:
                 attachments.append(attachment)
             elif part.get_content_type() == 'text/plain':
                 body += part.get_payload(decode=True).decode(charset, errors='ignore')
