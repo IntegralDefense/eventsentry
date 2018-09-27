@@ -37,11 +37,14 @@ class Module(DetectionModule):
         # Get all of the existing message-ids in the event.
         existing_message_ids = [email['message_id'] for email in self.event_json['emails']]
 
-        # Get all of the unique sender+subject pairs, sender+attachment name pairs, and attachment SHA256 hashes.
+        # Get all of the unique senders, sender+subject pairs, sender+attachment name pairs, and attachment SHA256 hashes.
+        senders = set()
         sender_subject_pairs = set()
         sender_attachment_pairs = set()
         attachment_hashes = set()
         for email in self.event_json['emails']:
+            if email['from_address']:
+                senders.add(email['from_address'])
             if email['from_address'] and email['subject']:
                 sender_subject_pairs.add((email['from_address'], email['subject']))
             for attach in email['attachments']:
@@ -58,6 +61,29 @@ class Module(DetectionModule):
 
                 # Store the missed phish that we find.
                 missed_phish = set()
+
+                """
+                QUERY SPLUNK FOR MISSED PHISH BY SENDER
+                """
+
+                for sender in senders:
+
+                    # Store the Splunk output lines.
+                    output_lines = []
+
+                    # This is the actual command line version of the Splunk query.
+                    command = '{} --enviro {} -s "{}" --json "index=email* mail_from=\\"*{}*\\" | table message_id subject"'.format(SPLUNKLIB, company, start_time, sender)
+                    try:
+                        output = subprocess.check_output(command, shell=True).decode('utf-8')
+
+                        # If there was output, it means the Splunk search returned something.
+                        if output:
+                            output_json = json.loads(output)
+                            for result in output_json['result']:
+                                if not result['message_id'] in existing_message_ids:
+                                    missed_phish.add((result['message_id'], result['subject']))
+                    except:
+                        self.logger.exception('Error when running Splunk search: {}'.format(command))
 
                 """
                 QUERY SPLUNK FOR MISSED PHISH BY SENDER+SUBJECT
