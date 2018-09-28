@@ -23,6 +23,9 @@ class Module(DetectionModule):
             if alert['company_name'] and not alert['company_name'] in ignore_these_companies:
                 company_names.add(alert['company_name'])
 
+        # These are the domains to ignore when searching for missed phish by the sender address.
+        ignore_these_domains = list(set(self.config.get('production', 'ignore_these_domains').split(',')))
+
         # Get the start time.
         try:
             received_time = datetime.datetime.strptime(self.event_json['emails'][0]['received_time'][0:19], '%Y-%m-%d %H:%M:%S')
@@ -37,18 +40,22 @@ class Module(DetectionModule):
         # Get all of the existing message-ids in the event.
         existing_message_ids = [email['message_id'] for email in self.event_json['emails']]
 
-        # Get all of the unique sender+subject pairs, sender+attachment name pairs, and attachment SHA256 hashes.
+        # Get all of the unique senders, sender+subject pairs, sender+attachment name pairs, and attachment SHA256 hashes.
+        senders = set()
         sender_subject_pairs = set()
         sender_attachment_pairs = set()
         attachment_hashes = set()
         for email in self.event_json['emails']:
-            if email['from_address'] and email['subject']:
-                sender_subject_pairs.add((email['from_address'], email['subject']))
-            for attach in email['attachments']:
-                if attach['sha256']:
-                    attachment_hashes.add(attach['sha256'])
-                if email['from_address'] and attach['name']:
-                    sender_attachment_pairs.add((email['from_address'], attach['name']))
+            if not any(ignore_domain in email['from_address'] for ignore_domain in ignore_these_domains):
+                if email['from_address']:
+                    senders.add(email['from_address'])
+                if email['from_address'] and email['subject']:
+                    sender_subject_pairs.add((email['from_address'], email['subject']))
+                for attach in email['attachments']:
+                    if attach['sha256']:
+                        attachment_hashes.add(attach['sha256'])
+                    if email['from_address'] and attach['name']:
+                        sender_attachment_pairs.add((email['from_address'], attach['name']))
 
         # Only continue if we have a valid start and end time.
         if start_time and end_time:
@@ -58,6 +65,29 @@ class Module(DetectionModule):
 
                 # Store the missed phish that we find.
                 missed_phish = set()
+
+                """
+                QUERY SPLUNK FOR MISSED PHISH BY SENDER
+                """
+
+                for sender in senders:
+
+                    # Store the Splunk output lines.
+                    output_lines = []
+
+                    # This is the actual command line version of the Splunk query.
+                    command = '{} --enviro {} -s "{}" --json "index=email* mail_from=\\"*{}*\\" | table message_id subject"'.format(SPLUNKLIB, company, start_time, sender)
+                    try:
+                        output = subprocess.check_output(command, shell=True).decode('utf-8')
+
+                        # If there was output, it means the Splunk search returned something.
+                        if output:
+                            output_json = json.loads(output)
+                            for result in output_json['result']:
+                                if not result['message_id'] in existing_message_ids:
+                                    missed_phish.add((result['message_id'], result['subject']))
+                    except:
+                        self.logger.exception('Error when running Splunk search: {}'.format(command))
 
                 """
                 QUERY SPLUNK FOR MISSED PHISH BY SENDER+SUBJECT
