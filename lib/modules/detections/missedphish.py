@@ -23,6 +23,9 @@ class Module(DetectionModule):
             if alert['company_name'] and not alert['company_name'] in ignore_these_companies:
                 company_names.add(alert['company_name'])
 
+        # These are the domains to ignore when searching for missed phish by the sender address.
+        ignore_these_domains = list(set(self.config.get('production', 'ignore_these_domains').split(',')))
+
         # Get the start time.
         try:
             received_time = datetime.datetime.strptime(self.event_json['emails'][0]['received_time'][0:19], '%Y-%m-%d %H:%M:%S')
@@ -43,15 +46,16 @@ class Module(DetectionModule):
         sender_attachment_pairs = set()
         attachment_hashes = set()
         for email in self.event_json['emails']:
-            if email['from_address']:
-                senders.add(email['from_address'])
-            if email['from_address'] and email['subject']:
-                sender_subject_pairs.add((email['from_address'], email['subject']))
-            for attach in email['attachments']:
-                if attach['sha256']:
-                    attachment_hashes.add(attach['sha256'])
-                if email['from_address'] and attach['name']:
-                    sender_attachment_pairs.add((email['from_address'], attach['name']))
+            if not any(ignore_domain in email['from_address'] for ignore_domain in ignore_these_domains):
+                if email['from_address']:
+                    senders.add(email['from_address'])
+                if email['from_address'] and email['subject']:
+                    sender_subject_pairs.add((email['from_address'], email['subject']))
+                for attach in email['attachments']:
+                    if attach['sha256']:
+                        attachment_hashes.add(attach['sha256'])
+                    if email['from_address'] and attach['name']:
+                        sender_attachment_pairs.add((email['from_address'], attach['name']))
 
         # Only continue if we have a valid start and end time.
         if start_time and end_time:
