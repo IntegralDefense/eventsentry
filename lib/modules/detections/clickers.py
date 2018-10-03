@@ -66,6 +66,11 @@ class Module(DetectionModule):
         # Only continue if we have a valid start time.
         if len(start_time) == 19:
 
+            # Bump the start time back an extra hour to help make sure we have better coverage.
+            earlier_start_time = datetime.datetime.strptime(start_time, '%Y-%m-%d %H:%M:%S') - datetime.timedelta(hours=1)
+            earlier_start_time = earlier_start_time.strftime('%Y-%m-%d %H:%M:%S')
+            start_time = earlier_start_time
+
             # Run the Splunk search for each company we found in the alerts.
             for company in company_names:
 
