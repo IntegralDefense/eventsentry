@@ -40,22 +40,17 @@ class Module(DetectionModule):
         # Get all of the existing message-ids in the event.
         existing_message_ids = [email['message_id'] for email in self.event_json['emails']]
 
-        # Get all of the unique senders, sender+subject pairs, sender+attachment name pairs, and attachment SHA256 hashes.
-        senders = set()
-        sender_subject_pairs = set()
-        sender_attachment_pairs = set()
+        # Get all of the unique senders that aren't Informational or whitelisted by sender domain.
+        senders = set([i['value'] for i in self.event_json['indicators'] if not i['whitelisted'] and 'from_address' in i['tags'] and (i['status'] == 'New' or i['status'] == 'Analyzed' or i['status'] == 'In Progress')])
+        senders = [sender for sender in senders if not any(ignore_domain in sender for ignore_domain in ignore_these_domains)]
+
+        # Get all of the unique attachment hashes that aren't whitelisted by sender domain.
         attachment_hashes = set()
         for email in self.event_json['emails']:
             if not any(ignore_domain in email['from_address'] for ignore_domain in ignore_these_domains):
-                if email['from_address']:
-                    senders.add(email['from_address'])
-                if email['from_address'] and email['subject']:
-                    sender_subject_pairs.add((email['from_address'], email['subject']))
                 for attach in email['attachments']:
                     if attach['sha256']:
                         attachment_hashes.add(attach['sha256'])
-                    if email['from_address'] and attach['name']:
-                        sender_attachment_pairs.add((email['from_address'], attach['name']))
 
         # Only continue if we have a valid start and end time.
         if start_time and end_time:
@@ -86,57 +81,6 @@ class Module(DetectionModule):
                             for result in output_json['result']:
                                 if not result['message_id'] in existing_message_ids:
                                     missed_phish.add((result['message_id'], result['subject']))
-                    except:
-                        self.logger.exception('Error when running Splunk search: {}'.format(command))
-
-                """
-                QUERY SPLUNK FOR MISSED PHISH BY SENDER+SUBJECT
-                """
-
-                for sender_subject_pair in sender_subject_pairs:
-
-                    # Store the Splunk output lines.
-                    output_lines = []
-
-                    # This is the actual command line version of the Splunk query.
-                    sender = sender_subject_pair[0]
-                    subject = sender_subject_pair[1]
-                    command = '{} --enviro {} -s "{}" --json "index=email* subject=\\"{}\\" AND mail_from=\\"*{}*\\" | table message_id subject"'.format(SPLUNKLIB, company, start_time, subject, sender) 
-                    try:
-                        output = subprocess.check_output(command, shell=True).decode('utf-8')
-
-                        # If there was output, it means the Splunk search returned something.
-                        if output:
-                            output_json = json.loads(output)
-                            for result in output_json['result']:
-                                if not result['message_id'] in existing_message_ids:
-                                    missed_phish.add((result['message_id'], result['subject']))
-                    except:
-                        self.logger.exception('Error when running Splunk search: {}'.format(command))
-
-                """
-                QUERY SPLUNK FOR MISSED PHISH BY SENDER+ATTACHMENT NAME
-                """
-
-                for sender_attachment_pair in sender_attachment_pairs:
-
-                    # Store the Splunk output lines.
-                    output_lines = []
-
-                    # This is the actual command line version of the Splunk query.
-                    sender = sender_attachment_pair[0]
-                    attachment_name = sender_attachment_pair[1]
-                    command = '{} --enviro {} -s "{}" --json "index=email* attachment_names=\\"*{}*\\" AND mail_from=\\"*{}*\\" | table message_id subject"'.format(SPLUNKLIB, company, start_time, attachment_name, sender)
-                    try:
-                        output = subprocess.check_output(command, shell=True).decode('utf-8')
-
-                        # If there was output, it means the Splunk search returned something.
-                        if output:
-                            output_json = json.loads(output)
-                            for result in output_json['result']:
-                                if not result['message_id'] in existing_message_ids:
-                                    missed_phish.add((result['message_id'], result['subject']))
-
                     except:
                         self.logger.exception('Error when running Splunk search: {}'.format(command))
 
