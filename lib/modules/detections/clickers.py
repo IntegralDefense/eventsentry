@@ -96,11 +96,18 @@ class Module(DetectionModule):
                         if output:
 
                             # Loop over each of the lines to try and find the GUI Link line.
+                            gui_link = ''
+                            user_id = ''
                             for line in output.splitlines():
 
                                 if 'GUI Link: ' in line:
                                     gui_link = line.replace('GUI Link: ', '').strip()
-                                    self.detections.append('! DETECTED NETCONN TO DOMAIN {} ! {}'.format(domain, gui_link))
+                                if 'Username: ' in line:
+                                    user_id = line.split('\\')[1].strip()
+
+                                if gui_link and user_id:
+                                    self.detections.append('! DETECTED NETCONN {} TO DOMAIN {} ! {}'.format(user_id, domain, gui_link))
+                                    clicker_ids.append(user_id)
                                     self.tags.append('incidents')
                                     self.tags.append('exploitation')
                                     self.extra.append(output)
@@ -118,11 +125,18 @@ class Module(DetectionModule):
                         if output:
 
                             # Loop over each of the lines to try and find the GUI Link line.
+                            gui_link = ''
+                            user_id = ''
                             for line in output.splitlines():
 
                                 if 'GUI Link: ' in line:
                                     gui_link = line.replace('GUI Link: ', '').strip()
-                                    self.detections.append('! DETECTED NETCONN TO IP {} ! {}'.format(ip, gui_link))
+                                if 'Username: ' in line:
+                                    user_id = line.split('\\')[1].strip()
+
+                                if gui_link and user_id:
+                                    self.detections.append('! DETECTED NETCONN {} TO IP {} ! {}'.format(user_id, ip, gui_link))
+                                    clicker_ids.append(user_id)
                                     self.tags.append('incidents')
                                     self.tags.append('exploitation')
                                     self.extra.append(output)
