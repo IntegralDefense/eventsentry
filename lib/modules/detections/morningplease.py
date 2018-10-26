@@ -19,10 +19,10 @@ class Module(DetectionModule):
 
                 # These are the possible Morning Please string combinations.
                 string_combos = []
-                string_combos.append(['Morning.', 'Please see attached and confirm.'])
+                string_combos.append(['Morning.', 'Please see '])
                 string_combos.append(['Morning,', 'Attached'])
-                string_combos.append(['Morning,', 'Please see attached.'])
-                string_combos.append(['Morning,', 'Please see attached and confirm.'])
+                string_combos.append(['Morning.', 'Attached'])
+                string_combos.append(['Morning,', 'Please see '])
 
                 for ss in string_combos:
                     if all(s in email['body'] for s in ss):
