@@ -386,7 +386,10 @@ class EmailParser():
         if last_received_time:
             datetime_obj = dateutil.parser.parse(last_received_time.group(0), ignoretz=False)
             localtime = dateutil.tz.tzlocal()
-            localtime_string = str(datetime_obj.astimezone(localtime))
+            try:
+                localtime_string = str(datetime_obj.astimezone(localtime))
+            except ValueError:
+                localtime_string = str(datetime_obj)
             return localtime_string
         else:
             return ''
