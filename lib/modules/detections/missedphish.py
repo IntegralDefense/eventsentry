@@ -49,7 +49,7 @@ class Module(DetectionModule):
         for email in self.event_json['emails']:
             if not any(ignore_domain in email['from_address'] for ignore_domain in ignore_these_domains):
                 for attach in email['attachments']:
-                    if attach['sha256']:
+                    if attach['sha256'] and attach['size']:
                         attachment_hashes.add(attach['sha256'])
 
         # Only continue if we have a valid start and end time.
