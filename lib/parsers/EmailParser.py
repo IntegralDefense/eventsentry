@@ -492,9 +492,13 @@ class EmailParser():
                     attachment_name_pattern = re.compile(r'(file)?name="?([^"]+)"?')
                     for tup in part_items:
                         for item in tup:
-                            attachment_name = attachment_name_pattern.search(item)
-                            if attachment_name:
-                                attachment_dict['name'] = RegexHelpers.decode_utf_b64_string(attachment_name.groups()[1])
+                            item_lines = item.splitlines()
+                            for item_line in item_lines:
+                                attachment_name = attachment_name_pattern.search(item_line)
+                                if attachment_name:
+                                    attachment_dict['name'] = RegexHelpers.decode_utf_b64_string(attachment_name.groups()[1])
+                                    if attachment_dict['name'].endswith(';'):
+                                        attachment_dict['name'] = attachment_dict['name'][:-1]
                     
                     # Make the attachment indicators.
                     self.indicators.append(Indicator('Windows - FileName', attachment_dict['name'], tags=['attachment']))
