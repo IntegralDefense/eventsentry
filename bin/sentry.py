@@ -328,6 +328,7 @@ def process_event(event):
             for email in e.json['emails']:
                 email['remediated'] = False
 
+                key = ''
                 if email['original_recipient']:
                     key = '{}:{}'.format(email['message_id'], email['original_recipient'])
                 elif len(email['to_addresses']) == 1:
