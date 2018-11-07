@@ -103,8 +103,11 @@ class EmailParser():
         # email.parser can properly parse out the e-mail. If we were given an
         # "smtp.email" type of file with the SMTP commands already removed, this
         # should not affect anything. This is legacy code at this point.
-        while not smtp_stream[0].startswith('Received:'):
-            smtp_stream.pop(0)
+        try:
+            while not smtp_stream[0].startswith('Received:'):
+                smtp_stream.pop(0)
+        except IndexError:
+            smtp_stream = []
 
         # Join the header lines into a single string.
         email_text = '\n'.join(smtp_stream)
@@ -378,7 +381,10 @@ class EmailParser():
 
     def _get_received_time(self, email_obj):
         header=email_obj.get_all('received', [])
-        last_received_lines = header[0]
+        try:
+            last_received_lines = header[0]
+        except IndexError:
+            last_received_lines = ''
 
         received_time_pattern = re.compile(r'[A-Z][a-z]{2,3},\s+\d+\s+[A-Z][a-z]{2,3}\s+[0-9]{4}\s+[0-9]{2}:[0-9]{2}:[0-9]{2}\s*(\+\d+|\-\d+)*')
         last_received_time = re.search(received_time_pattern, last_received_lines)
