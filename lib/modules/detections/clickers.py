@@ -151,7 +151,7 @@ class Module(DetectionModule):
                 output_lines = []
 
                 # This is the actual command line version of the Splunk query.
-                command = '{} --enviro {} -s "{}" "index=bluecoat OR index=bro_http OR index=carbonblack NOT authentication_failed {} {}"'.format(SPLUNKLIB, company, start_time, domains_ips_paths_string, splunk_whitelisted_things_string)
+                command = '{} --enviro {} -s "{}" "index=bluecoat OR index=bro_http OR index=carbonblack NOT authentication_failed NOT favicon.ico {} {}"'.format(SPLUNKLIB, company, start_time, domains_ips_paths_string, splunk_whitelisted_things_string)
                 
                 try:
                     output = subprocess.check_output(command, shell=True).decode('utf-8')
