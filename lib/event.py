@@ -694,10 +694,11 @@ class Event():
             for f in files:
                 try:
                     full_path = os.path.join(root, f)
+                    relative_path = full_path.replace(self.path, '')
 
                     # There are some files/paths we want to skip.
                     skip_these_things = self.config['production']['bad_structure_paths'].split(',')
-                    if any(bad_path in full_path for bad_path in skip_these_things):
+                    if any(bad_path in relative_path for bad_path in skip_these_things):
                         continue
 
                     # Create a file object from the path.
