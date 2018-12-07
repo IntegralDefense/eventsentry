@@ -129,6 +129,10 @@ class BaseSandboxParser():
     def make_http_request(self, host='', port='', uri='', method='', user_agent=''):
         """ JSON compatible view of an HTTP request. """
 
+        # Sometimes the Cuckoo reports have the port added to the host value. Strip that out.
+        if ':' in host:
+            host = host.split(':')[0]
+
         # Figure out the protocol to use for the URL.
         if str(port) == '443':
             protocol = 'https'
