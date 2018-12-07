@@ -1,4 +1,5 @@
 import ipaddress
+import logging
 import re
 import urllib
 from tld import get_fld
@@ -49,6 +50,38 @@ class Indicator:
 
         return json
 
+def merge_indicators(indicators):
+    """ Merges a list of indicators that might have duplicates. """
+
+    logger = logging.getLogger(__name__)
+    merged = []
+
+    for ind in indicators:
+
+        # If this indicator (based on type+value) isn't already in the list, add it.
+        if not ind in merged:
+            merged.append(ind)
+        # Otherwise, we need to merge the two.
+        else:
+            # Find the indicator in the merged list to merge with.
+            for merged_ind in merged:
+                if ind == merged_ind:
+                    # Merge the tags.
+                    merged_ind.tags = list(set(ind.tags + merged_ind.tags))
+
+                    # Merge the relationships.
+                    merged_ind.relationships = list(set(ind.relationships + merged_ind.relationships))
+
+                    # If at least one of the indicators has the Whitelisted status, let that take precedence.
+                    # Otherwise, let the New status take precedence.
+                    if ind.whitelisted or merged_ind.whitelisted:
+                        merged_ind.status = 'Whitelisted'
+                        merged_ind.whitelisted = True
+                    elif ind.status == 'New' or merged_ind.status == 'New':
+                        merged_ind.status = 'New'
+                        merged_ind.whitelisted = False
+
+    return merged
 
 def get_crits_status(mongo_connection, indicator):
     """ Queries the Mongo DB connection to get the indicator status. """
@@ -94,6 +127,7 @@ def get_crits_id(mongo_connection, indicator):
 
 def make_url_indicators(urls, tags=[]):
     """ Make indicators from a list of URLs. """
+    logger = logging.getLogger(__name__)
 
     if isinstance(urls, str):
         urls = [urls]
@@ -145,13 +179,12 @@ def make_url_indicators(urls, tags=[]):
                 except:
                     pass
 
-                # Domain
+                # Domain/IP
                 try:
                     ipaddress.ip_address(netloc)
-                    netloc_type = 'Address - ipv4-addr'
-                except:
-                    netloc_type = 'URI - Domain Name'
-                indicators.append(Indicator(netloc_type, netloc, status=status, tags=tags, relationships=[u]))
+                    indicators.append(Indicator('Address - ipv4-addr', netloc, status=status, tags=tags+['ip_in_url'], relationships=[u]))
+                except ValueError:
+                    indicators.append(Indicator('URI - Domain Name', netloc, status=status, tags=tags+['domain_in_url'], relationships=[u]))
 
                 # TLD
                 tld = get_fld('http://{}'.format(netloc), fail_silently=True)
@@ -173,4 +206,6 @@ def make_url_indicators(urls, tags=[]):
                 # Query
                 indicators.append(Indicator('URI - Path', parsed_url.query, status=status, tags=tags, relationships=[u, parsed_url.netloc]))
 
-    return [i for i in set(indicators) if i.value]
+    good_indicators = [i for i in set(indicators) if i.value]
+
+    return good_indicators

@@ -29,6 +29,7 @@ from lib.parsers import BaseSandboxParser
 from lib.parsers import CuckooParser
 from lib.parsers import EmailParser
 from lib.indicator import make_url_indicators
+from lib.indicator import merge_indicators
 from lib.parsers import VxstreamParser
 from lib.parsers import WildfireParser
 from lib.eventwhitelist import EventWhitelist
@@ -290,6 +291,7 @@ class Event():
                             dropped_file['event_path'] = f['path']
 
             # Gather up the indicators.
+            all_indicators = []
             self.json['indicators'] = []
 
             # Loop over all of the HTML files in the event and pull out the URLs.
@@ -312,7 +314,7 @@ class Event():
                 for indicator in indicators:
                     indicator.path = html_file
                     indicator.whitelisted = whitelist.is_indicator_whitelisted(indicator)
-                    self.json['indicators'].append(indicator.json)
+                    all_indicators.append(indicator)
 
             # Gather up the indicators from the ACE alerts.
             self.logger.debug('Checking ACE alert indicators against whitelist.')
@@ -320,7 +322,7 @@ class Event():
                 for indicator in ace_alert.indicators:
                     indicator.path = ace_alert.path
                     indicator.whitelisted = whitelist.is_indicator_whitelisted(indicator)
-                    self.json['indicators'].append(indicator.json)
+                    all_indicators.append(indicator)
 
             # Gather up the indicators from the emails.
             self.logger.debug('Checking email indicators against whitelist.')
@@ -328,7 +330,7 @@ class Event():
                 for indicator in email.indicators:
                     indicator.path = email.path
                     indicator.whitelisted = whitelist.is_indicator_whitelisted(indicator)
-                    self.json['indicators'].append(indicator.json)
+                    all_indicators.append(indicator)
 
             # Gather up the indicators from the sandbox reports.
             self.logger.debug('Checking sandbox indicators against whitelist.')
@@ -339,10 +341,16 @@ class Event():
                     for indicator in sandbox_report.indicators:
                         indicator.path = matching_samples[0]['path']
                         indicator.whitelisted = whitelist.is_indicator_whitelisted(indicator)
-                        self.json['indicators'].append(indicator.json)
-
+                        all_indicators.append(indicator)
                 else:
                     self.logger.warning('Could not find matching sample for indicators: "{}" "{}"'.format(sandbox_report.filename, sandbox_report.md5))
+
+            # Merge all of the indicators.
+            merged_indicators = merge_indicators(all_indicators)
+
+            # Add the merged indicators to the event JSON.
+            for merged_ind in merged_indicators:
+                self.json['indicators'].append(merged_ind.json)
 
             # Gather up any manual indicators we were given (from the refresh wiki function).
             # These are not Indicator objects, so we do not add the .json form to the list.

@@ -129,6 +129,10 @@ class BaseSandboxParser():
     def make_http_request(self, host='', port='', uri='', method='', user_agent=''):
         """ JSON compatible view of an HTTP request. """
 
+        # Sometimes the Cuckoo reports have the port added to the host value. Strip that out.
+        if ':' in host:
+            host = host.split(':')[0]
+
         # Figure out the protocol to use for the URL.
         if str(port) == '443':
             protocol = 'https'
@@ -378,9 +382,5 @@ def dedup_reports(report_list, whitelist):
         # Add the screenshot URLs as-is.
         if report.screenshot_path:
             dedup_report.screenshot_paths.append(report.screenshot_path)
-
-    # Dedup the indicators.
-    dedup_report.indicators = list(set(dedup_report.indicators))
-    dedup_report.indicators = [i for i in dedup_report.indicators if i.value]
 
     return dedup_report
