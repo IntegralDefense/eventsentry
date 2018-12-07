@@ -1,4 +1,5 @@
 import ipaddress
+import logging
 import re
 import urllib
 from tld import get_fld
@@ -94,6 +95,7 @@ def get_crits_id(mongo_connection, indicator):
 
 def make_url_indicators(urls, tags=[]):
     """ Make indicators from a list of URLs. """
+    logger = logging.getLogger(__name__)
 
     if isinstance(urls, str):
         urls = [urls]
@@ -145,13 +147,12 @@ def make_url_indicators(urls, tags=[]):
                 except:
                     pass
 
-                # Domain
+                # Domain/IP
                 try:
                     ipaddress.ip_address(netloc)
-                    netloc_type = 'Address - ipv4-addr'
-                except:
-                    netloc_type = 'URI - Domain Name'
-                indicators.append(Indicator(netloc_type, netloc, status=status, tags=tags, relationships=[u]))
+                    indicators.append(Indicator('Address - ipv4-addr', netloc, status=status, tags=tags+['ip_in_url'], relationships=[u]))
+                except ValueError:
+                    indicators.append(Indicator('URI - Domain Name', netloc, status=status, tags=tags+['domain_in_url'], relationships=[u]))
 
                 # TLD
                 tld = get_fld('http://{}'.format(netloc), fail_silently=True)
@@ -173,4 +174,6 @@ def make_url_indicators(urls, tags=[]):
                 # Query
                 indicators.append(Indicator('URI - Path', parsed_url.query, status=status, tags=tags, relationships=[u, parsed_url.netloc]))
 
-    return [i for i in set(indicators) if i.value]
+    good_indicators = [i for i in set(indicators) if i.value]
+
+    return good_indicators
