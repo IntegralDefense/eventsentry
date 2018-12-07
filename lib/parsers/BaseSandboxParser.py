@@ -383,8 +383,4 @@ def dedup_reports(report_list, whitelist):
         if report.screenshot_path:
             dedup_report.screenshot_paths.append(report.screenshot_path)
 
-    # Dedup the indicators.
-    dedup_report.indicators = list(set(dedup_report.indicators))
-    dedup_report.indicators = [i for i in dedup_report.indicators if i.value]
-
     return dedup_report

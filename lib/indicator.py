@@ -50,6 +50,38 @@ class Indicator:
 
         return json
 
+def merge_indicators(indicators):
+    """ Merges a list of indicators that might have duplicates. """
+
+    logger = logging.getLogger(__name__)
+    merged = []
+
+    for ind in indicators:
+
+        # If this indicator (based on type+value) isn't already in the list, add it.
+        if not ind in merged:
+            merged.append(ind)
+        # Otherwise, we need to merge the two.
+        else:
+            # Find the indicator in the merged list to merge with.
+            for merged_ind in merged:
+                if ind == merged_ind:
+                    # Merge the tags.
+                    merged_ind.tags = list(set(ind.tags + merged_ind.tags))
+
+                    # Merge the relationships.
+                    merged_ind.relationships = list(set(ind.relationships + merged_ind.relationships))
+
+                    # If at least one of the indicators has the Whitelisted status, let that take precedence.
+                    # Otherwise, let the New status take precedence.
+                    if ind.whitelisted or merged_ind.whitelisted:
+                        merged_ind.status = 'Whitelisted'
+                        merged_ind.whitelisted = True
+                    elif ind.status == 'New' or merged_ind.status == 'New':
+                        merged_ind.status = 'New'
+                        merged_ind.whitelisted = False
+
+    return merged
 
 def get_crits_status(mongo_connection, indicator):
     """ Queries the Mongo DB connection to get the indicator status. """

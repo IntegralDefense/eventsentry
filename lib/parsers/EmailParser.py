@@ -304,8 +304,8 @@ class EmailParser():
         # Make indicators for the URLs.
         self.indicators += make_url_indicators(self.urls)
 
-        # Get rid of any invalid and duplicate indicators.
-        self.indicators = [i for i in set(self.indicators) if i.value]
+        # Get rid of any invalid indicators.
+        self.indicators = [i for i in self.indicators if i.value]
 
         # Add any extra tags to each indicator.
         for i in self.indicators:
