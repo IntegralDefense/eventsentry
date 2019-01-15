@@ -110,10 +110,10 @@ class EmailParser():
             smtp_stream = []
 
         # Join the header lines into a single string.
-        email_text = '\n'.join(smtp_stream)
+        self.email_text = '\n'.join(smtp_stream)
 
         # Create the e-mail object.
-        email_obj = email.message_from_string(email_text)
+        email_obj = email.message_from_string(self.email_text)
 
         # We want to try and parse an embedded/attached e-mail if there is one.
         # Walk the full e-mail's parts.
@@ -200,9 +200,9 @@ class EmailParser():
         except:
             pass
         # If the original_recipient was not found, check if this is a POTENTIAL PHISH e-mail and use the from address.
-        if not self.original_recipient and 'Subject: [POTENTIAL PHISH]' in email_text:
+        if not self.original_recipient and 'Subject: [POTENTIAL PHISH]' in self.email_text:
             try:
-                temp_email_obj = email.message_from_string(email_text)
+                temp_email_obj = email.message_from_string(self.email_text)
                 self.original_recipient = self._get_address_list(temp_email_obj, 'from')[0][1]
                 self.indicators.append(Indicator('Email - Address', self.original_recipient, status='Informational', tags=['original_recipient']))
             except:
@@ -274,6 +274,8 @@ class EmailParser():
             pass
 
         self.received_time = self._get_received_time(email_obj)
+        if not self.received_time:
+            self.received_time = self._get_date_time()
 
         # Find any URLs in the plaintext body.
         text_urls = find_urls(self.body)
@@ -378,6 +380,22 @@ class EmailParser():
     def _get_address_list(self, email_obj, header_name):
         header = email_obj.get_all(header_name, [])
         return email.utils.getaddresses(header)
+
+    def _get_date_time(self):
+        for line in self.email_text.splitlines():
+            if 'Date:' in line:
+                date_pattern = re.compile(r'[A-Z][a-z]{2,3},\s+\d+\s+[A-Z][a-z]{2,3}\s+[0-9]{4}\s+[0-9]{2}:[0-9]{2}:[0-9]{2}\s*(\+\d+|\-\d+)*')
+                date_time = re.search(date_pattern, line)
+
+                if date_time:
+                    datetime_obj = dateutil.parser.parse(date_time.group(0), ignoretz=False)
+                    localtime = dateutil.tz.tzlocal()
+                    try:
+                        localtime_string = str(datetime_obj.astimezone(localtime))
+                    except ValueError:
+                        localtime_string = str(datetime_obj)
+                    return localtime_string
+        return ''
 
     def _get_received_time(self, email_obj):
         header=email_obj.get_all('received', [])
