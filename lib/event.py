@@ -228,7 +228,7 @@ class Event():
 
             # Parse the emails and make their indicators.
             emails = self.parse_emails(whitelist)
-            self.json['emails'] = [email.json for email in emails]
+            self.json['emails'] = [email.json for email in emails if email.received_time and email.message_id]
 
             # Symlink to the sreenshots in the emails so we can ensure they have unique file names.
             for email in self.json['emails']:
