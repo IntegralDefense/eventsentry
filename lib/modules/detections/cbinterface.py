@@ -1,4 +1,6 @@
 import datetime
+import dateutil.parser
+import dateutil.tz
 import logging
 import re
 import subprocess
@@ -39,50 +41,65 @@ class Module(DetectionModule):
         # Get all of the good Hash - MD5 indicators from the event.
         md5s = list(set([i['value'] for i in good_indicators if i['type'] == 'Hash - MD5' and (i['status'] == 'New' or i['status'] == 'Analyzed')]))
 
-        # Run the cbinterface commands for each company in the event.
-        for company in company_names:
-        
-            # Search for each filename.
-            for filename in filenames:
+        # Get the event time so that we can limit the scope of the cbinterface queries.
+        event_time = None
+        if self.event_json['emails']:
+            event_time = self.event_json['emails'][0]['received_time']
+        elif self.event_json['ace_alerts']:
+            event_time = self.event_json['ace_alerts'][0]['time']
 
-                # Build and run the cbinterface command.
-                command = 'cbinterface -e {} query \'{} {} filemod:"{}"\''.format(company, ignore_these_process_names_string, ignore_these_process_md5s_string, filename)
-                try:
-                    output = subprocess.check_output(command, shell=True).decode('utf-8')
+        # Continue if we have an event time.
+        if event_time:
 
-                    # If there was output, it means the search returned something.
-                    if output:
+            # cbinterface needs Eastern Time for the queries, so convert it.
+            tzstr = dateutil.tz.tzstr('EST5EDT')
+            event_time_obj = dateutil.parser.parse(event_time, ignoretz=False)
+            est_string = str(event_time_obj.astimezone(tzstr))[0:19]
 
-                        # Loop over each of the lines to try and find the GUI Link line.
-                        for line in output.splitlines():
+            # Run the cbinterface commands for each company in the event.
+            for company in company_names:
+            
+                # Search for each filename.
+                for filename in filenames:
 
-                            if 'GUI Link: ' in line:
-                                gui_link = line.replace('GUI Link: ', '').strip()
-                                self.detections.append('! DETECTED FILENAME {} ! {}'.format(filename, gui_link))
-                                self.tags.append('incidents')
-                                self.tags.append('exploitation')
-                                self.extra.append(output)
-                except:
-                    self.logger.exception('Error running cbinterface command: {}'.format(command))
+                    # Build and run the cbinterface command.
+                    command = 'cbinterface -e {} query \'{} {} filemod:"{}"\' -s \'{}\''.format(company, ignore_these_process_names_string, ignore_these_process_md5s_string, filename, est_string)
+                    try:
+                        output = subprocess.check_output(command, shell=True).decode('utf-8')
 
-            # Search for each MD5.
-            for md5 in md5s:
+                        # If there was output, it means the search returned something.
+                        if output:
 
-                command = 'cbinterface -e {} query \'{} {} md5:{}\''.format(company, ignore_these_process_names_string, ignore_these_process_md5s_string, md5)
-                try:
-                    output = subprocess.check_output(command, shell=True).decode('utf-8')
+                            # Loop over each of the lines to try and find the GUI Link line.
+                            for line in output.splitlines():
 
-                    # If there was output, it means the search returned something.
-                    if output:
+                                if 'GUI Link: ' in line:
+                                    gui_link = line.replace('GUI Link: ', '').strip()
+                                    self.detections.append('! DETECTED FILENAME {} ! {}'.format(filename, gui_link))
+                                    self.tags.append('incidents')
+                                    self.tags.append('exploitation')
+                                    self.extra.append(output)
+                    except:
+                        self.logger.exception('Error running cbinterface command: {}'.format(command))
 
-                        # Loop over each of the lines to try and find the GUI Link line.
-                        for line in output.splitlines():
+                # Search for each MD5.
+                for md5 in md5s:
 
-                            if 'GUI Link: ' in line:
-                                gui_link = line.replace('GUI Link: ', '').strip()
-                                self.detections.append('! DETECTED MD5 {} ! {}'.format(md5, gui_link))
-                                self.tags.append('incidents')
-                                self.tags.append('exploitation')
-                                self.extra.append(output)
-                except:
-                    self.logger.exception('Error running cbinterface command: {}'.format(command))
+                    command = 'cbinterface -e {} query \'{} {} md5:{}\' -s \'{}\''.format(company, ignore_these_process_names_string, ignore_these_process_md5s_string, md5, est_string)
+                    try:
+                        output = subprocess.check_output(command, shell=True).decode('utf-8')
+
+                        # If there was output, it means the search returned something.
+                        if output:
+
+                            # Loop over each of the lines to try and find the GUI Link line.
+                            for line in output.splitlines():
+
+                                if 'GUI Link: ' in line:
+                                    gui_link = line.replace('GUI Link: ', '').strip()
+                                    self.detections.append('! DETECTED MD5 {} ! {}'.format(md5, gui_link))
+                                    self.tags.append('incidents')
+                                    self.tags.append('exploitation')
+                                    self.extra.append(output)
+                    except:
+                        self.logger.exception('Error running cbinterface command: {}'.format(command))
