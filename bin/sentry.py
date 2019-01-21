@@ -71,7 +71,8 @@ def get_open_events():
         open_events = []
 
         # Connect to the database and get a cursor.
-        db = MySQLdb.connect(host=config['production']['ace_db_server'], user=config['production']['ace_db_user'], passwd=config['production']['ace_db_pass'], db=config['production']['ace_db_name'])
+        ssl_settings = {'ca': config['production']['ace_ca_bundle']}
+        db = MySQLdb.connect(host=config['production']['ace_db_server'], user=config['production']['ace_db_user'], passwd=config['production']['ace_db_pass'], db=config['production']['ace_db_name'], ssl=ssl_settings)
         c = db.cursor()
         logger.debug('Connected to ACE database.')
 
@@ -129,7 +130,8 @@ def process_event(event):
     start_time = time.time()
 
     # Connect to the ACE database.
-    ace_db = MySQLdb.connect(host=config['production']['ace_db_server'], user=config['production']['ace_db_user'], passwd=config['production']['ace_db_pass'], db=config['production']['ace_db_name'])
+    ssl_settings = {'ca': config['production']['ace_ca_bundle']}
+    ace_db = MySQLdb.connect(host=config['production']['ace_db_server'], user=config['production']['ace_db_user'], passwd=config['production']['ace_db_pass'], db=config['production']['ace_db_name'], ssl=ssl_settings)
 
     # Create a CRITs Mongo connection.
     mongo_uri = config.get('production', 'crits_mongo_url')
