@@ -37,6 +37,11 @@ if not os.path.exists(config_path):
 config = configparser.ConfigParser()
 config.read(config_path)
 
+# Add the ACE client library to sys.path
+ace_client_library = config['production']['ace_client_library']
+if ace_client_library not in sys.path:
+    sys.path.append(ace_client_library)
+
 # Set up logging.
 log_path = os.path.join(HOME_DIR, 'logs', 'eventsentry.log')
 logger = logging.getLogger()
