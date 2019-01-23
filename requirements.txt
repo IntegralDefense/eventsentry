@@ -27,6 +27,6 @@ requests==2.19.0
 six==1.11.0
 tld==0.9.1
 tzlocal==1.5.1
-urlfinderlib==0.7.0
+urlfinderlib==0.7.1
 urllib3==1.23
 wcwidth==0.1.7
