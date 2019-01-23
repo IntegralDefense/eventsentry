@@ -34,6 +34,18 @@ class Module(DetectionModule):
         for process_md5 in ignore_these_process_md5s:
             ignore_these_process_md5s_string += '-process_md5:{} '.format(process_md5)
 
+        # These are the computer names that will be ignored from the queries.
+        ignore_these_computers = list(set(self.config.get('production', 'ignore_these_computers').split(',')))
+        ignore_these_computers_string = ''
+        for computer in ignore_these_computers:
+            ignore_these_computers_string += '-hostname:{} '.format(computer)
+
+        # These are the users that will be ignored from the queries.
+        ignore_these_users = list(set(self.config.get('production', 'ignore_these_users').split(',')))
+        ignore_these_users_string = ''
+        for user in ignore_these_users:
+            ignore_these_users_string += '-username:{} '.format(user)
+
         # Get all of the good Windows - FileName indicators from the event.
         good_indicators = [i for i in self.event_json['indicators'] if not i['whitelisted']]
         filenames = list(set([i['value'] for i in good_indicators if i['type'] == 'Windows - FileName' and (i['status'] == 'New' or i['status'] == 'Analyzed')]))
@@ -63,7 +75,7 @@ class Module(DetectionModule):
                 for filename in filenames:
 
                     # Build and run the cbinterface command.
-                    command = 'cbinterface -e {} query \'{} {} filemod:"{}"\' -s \'{}\''.format(company, ignore_these_process_names_string, ignore_these_process_md5s_string, filename, est_string)
+                    command = 'cbinterface -e {} query \'{} {} {} {} filemod:"{}"\' -s \'{}\''.format(company, ignore_these_process_names_string, ignore_these_process_md5s_string, ignore_these_computers_string, ignore_these_users_string, filename, est_string)
                     try:
                         output = subprocess.check_output(command, shell=True).decode('utf-8')
 
@@ -85,7 +97,7 @@ class Module(DetectionModule):
                 # Search for each MD5.
                 for md5 in md5s:
 
-                    command = 'cbinterface -e {} query \'{} {} md5:{}\' -s \'{}\''.format(company, ignore_these_process_names_string, ignore_these_process_md5s_string, md5, est_string)
+                    command = 'cbinterface -e {} query \'{} {} {} {} md5:{}\' -s \'{}\''.format(company, ignore_these_process_names_string, ignore_these_process_md5s_string, ignore_these_computers_string, ignore_these_users_string, md5, est_string)
                     try:
                         output = subprocess.check_output(command, shell=True).decode('utf-8')
 
