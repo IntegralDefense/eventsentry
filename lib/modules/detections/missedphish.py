@@ -4,7 +4,7 @@ import logging
 import re
 import subprocess
 
-from lib.ace_client_lib.ace_client_lib.client import Alert
+from ace_client_lib.client import Alert
 from lib.constants import SPLUNKLIB
 from lib.modules.DetectionModule import *
 
@@ -120,7 +120,7 @@ class Module(DetectionModule):
                         alert_type = 'eventsentry',
                         desc = 'Event Sentry - Possible Missed Phish: {}'.format(subject),
                         event_time = datetime.datetime.now(),
-                        details = '')
+                        details = {})
                     alert.add_observable('message_id', message_id)
 
                     self.detections.append('! DETECTED POSSIBLE MISSED PHISH: {} <--- CHECK ACE FOR THE ALERT'.format(message_id))
