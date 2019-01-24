@@ -135,8 +135,15 @@ def process_event(event):
     start_time = time.time()
 
     # Connect to the ACE database.
+    connected = False
     ssl_settings = {'ca': config['production']['ace_ca_bundle']}
-    ace_db = MySQLdb.connect(host=config['production']['ace_db_server'], user=config['production']['ace_db_user'], passwd=config['production']['ace_db_pass'], db=config['production']['ace_db_name'], ssl=ssl_settings)
+    while not connected:
+        try:
+            ace_db = MySQLdb.connect(host=config['production']['ace_db_server'], user=config['production']['ace_db_user'], passwd=config['production']['ace_db_pass'], db=config['production']['ace_db_name'], ssl=ssl_settings)
+            connected = True
+        except:
+            self.logger.exception('Unable to connect to the ACE database')
+            time.sleep(5)
 
     # Create a CRITs Mongo connection.
     mongo_uri = config.get('production', 'crits_mongo_url')
