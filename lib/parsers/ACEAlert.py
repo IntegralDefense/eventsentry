@@ -99,7 +99,7 @@ class ACEAlert:
         for file in url_files:
             with open(os.path.join(self.alert_dir, '.ace', file)) as j:
                 json_data = json.load(j)
-                for url in json_data:
+                for url in json_data['urls']:
                     if url.endswith('/'):
                         url = url[:-1]
                     urls.add(url)
