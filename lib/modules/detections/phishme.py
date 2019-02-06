@@ -9,7 +9,7 @@ class Module(DetectionModule):
         self.logger.debug('Running the {} detection module'.format(self.name))
 
         for alert in self.event_json['ace_alerts']:
-            if '[POTENTIAL PHISH]' in alert['description']:
-                self.detections.append('Detected a user-reported phish: {}'.format(alert['description']))
+            if 'user_reported' in alert['tags']:
+                self.detections.append('Detected a user-reported phish: {}'.format(alert['url']))
                 self.tags.append('phishme')
 
