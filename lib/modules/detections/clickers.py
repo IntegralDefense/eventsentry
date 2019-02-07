@@ -103,7 +103,10 @@ class Module(DetectionModule):
                                 if 'GUI Link: ' in line:
                                     gui_link = line.replace('GUI Link: ', '').strip()
                                 if 'Username: ' in line:
-                                    user_id = line.split('\\')[1].strip()
+                                    try:
+                                        user_id = line.split('\\')[1].strip()
+                                    except IndexError:
+                                        user_id = line.strip()
 
                                 if gui_link and user_id:
                                     self.detections.append('! DETECTED NETCONN {} TO DOMAIN {} ! {}'.format(user_id, domain, gui_link))
