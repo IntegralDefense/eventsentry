@@ -88,7 +88,7 @@ class Module(DetectionModule):
 
                     # Build and run the cbinterface command.
                     # '(domain:loghomehq.com OR cmdline:loghomehq.com) -hostname:pcn0351378 -hostname:pcn0351374'
-                    command = 'cbinterface -e {} query -s "{}" \'(domain:"{}" OR cmdline:"{}") {}\''.format(company, start_time, domain, domain, cb_whitelisted_things_string)
+                    command = 'cbinterface -e {} query --no-warnings -s "{}" \'(domain:"{}" OR cmdline:"{}") {}\''.format(company, start_time, domain, domain, cb_whitelisted_things_string)
                     try:
                         output = subprocess.check_output(command, shell=True).decode('utf-8')
 
@@ -120,7 +120,7 @@ class Module(DetectionModule):
                 for ip in ips:
 
                     # Build and run the cbinterface command.
-                    command = 'cbinterface -e {} query -s "{}" \'(ipaddr:{} OR cmdline:{}) {}\''.format(company, start_time, ip, ip, cb_whitelisted_things_string)
+                    command = 'cbinterface -e {} query --no-warnings -s "{}" \'(ipaddr:{} OR cmdline:{}) {}\''.format(company, start_time, ip, ip, cb_whitelisted_things_string)
                     try:
                         output = subprocess.check_output(command, shell=True).decode('utf-8')
 
