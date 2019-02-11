@@ -75,7 +75,7 @@ class Module(DetectionModule):
                 for filename in filenames:
 
                     # Build and run the cbinterface command.
-                    command = 'cbinterface -e {} query \'{} {} {} {} filemod:"{}" OR cmdline:"{}"\' -s \'{}\''.format(company, ignore_these_process_names_string, ignore_these_process_md5s_string, ignore_these_computers_string, ignore_these_users_string, filename, filename, est_string)
+                    command = 'cbinterface -e {} query --no-warnings \'{} {} {} {} filemod:"{}" OR cmdline:"{}"\' -s \'{}\''.format(company, ignore_these_process_names_string, ignore_these_process_md5s_string, ignore_these_computers_string, ignore_these_users_string, filename, filename, est_string)
                     try:
                         output = subprocess.check_output(command, shell=True).decode('utf-8')
 
@@ -97,7 +97,7 @@ class Module(DetectionModule):
                 # Search for each MD5.
                 for md5 in md5s:
 
-                    command = 'cbinterface -e {} query \'{} {} {} {} md5:{}\' -s \'{}\''.format(company, ignore_these_process_names_string, ignore_these_process_md5s_string, ignore_these_computers_string, ignore_these_users_string, md5, est_string)
+                    command = 'cbinterface -e {} query --no-warnings \'{} {} {} {} md5:{}\' -s \'{}\''.format(company, ignore_these_process_names_string, ignore_these_process_md5s_string, ignore_these_computers_string, ignore_these_users_string, md5, est_string)
                     try:
                         output = subprocess.check_output(command, shell=True).decode('utf-8')
 

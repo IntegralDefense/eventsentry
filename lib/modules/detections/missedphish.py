@@ -52,6 +52,11 @@ class Module(DetectionModule):
                     if attach['sha256'] and attach['size']:
                         attachment_hashes.add(attach['sha256'])
 
+        # Get all of the unique sender (do not care about whitelisted) and subject pairs.
+        sender_subjects = set()
+        for email in self.event_json['emails']:
+            sender_subjects.add((email['from_address'], email['subject']))
+
         # Only continue if we have a valid start and end time.
         if start_time and end_time:
 
@@ -60,6 +65,31 @@ class Module(DetectionModule):
 
                 # Store the missed phish that we find.
                 missed_phish = set()
+
+                """
+                QUERY SPLUNK FOR MISSED PHISH BY SENDER (DON'T CARE ABOUT WHITELISTED) AND SUBJECT PAIRS
+                """
+
+                for sender_subject in sender_subjects:
+                    sender = sender_subject[0]
+                    subject = sender_subject[1]
+
+                    # Store the Splunk output lines.
+                    output_lines = []
+
+                    # This is the actual command line version of the Splunk query.
+                    command = '{} --enviro {} -s "{}" --json "index=email* mail_from=\\"*{}*\\" subject=\\"*{}*\\"| table message_id subject"'.format(SPLUNKLIB, company, start_time, sender, subject)
+                    try:
+                        output = subprocess.check_output(command, shell=True).decode('utf-8')
+
+                        # If there was output, it means the Splunk search returned something.
+                        if output:
+                            output_json = json.loads(output)
+                            for result in output_json['result']:
+                                if not result['message_id'] in existing_message_ids:
+                                    missed_phish.add((result['message_id'], result['subject']))
+                    except:
+                        self.logger.exception('Error when running Splunk search: {}'.format(command))
 
                 """
                 QUERY SPLUNK FOR MISSED PHISH BY SENDER
