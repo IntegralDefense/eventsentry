@@ -1,4 +1,4 @@
-PyYAML==3.13
+PyYAML==4.2b4
 Pygments==2.2.0
 attrdict==2.0.0
 beautifulsoup4==4.6.3
@@ -23,10 +23,10 @@ pymongo==3.6.1
 python-dateutil==2.7.3
 python-magic==0.4.15
 pytz==2018.9
-requests==2.19.0
+requests==2.20.0
 six==1.11.0
 tld==0.9.1
 tzlocal==1.5.1
-urlfinderlib==0.7.1
+urlfinderlib==0.7.2
 urllib3==1.23
 wcwidth==0.1.7
