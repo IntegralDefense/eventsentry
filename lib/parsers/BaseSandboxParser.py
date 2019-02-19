@@ -349,16 +349,20 @@ def dedup_reports(report_list, whitelist):
         dedup_report.process_trees_decoded.append(process_tree_decoded)
 
         # Try to decode string .split() obfuscation (used by Emotet and others)
-        if '.split(' in report.process_tree.lower():
-            try:
-                split_char_pattern = re.compile(r'\.split\([\'\"\s]*(.*?)[\'\"\s]*\)', re.IGNORECASE)
-                split_char = str(split_char_pattern.search(report.process_tree).group(1))
-                process_tree_decoded = ' '.join(report.process_tree.split(split_char))
-                process_tree_decoded = process_tree_decoded.replace('\'', ' ')
-                process_tree_decoded = process_tree_decoded.replace('\"', ' ')
-                dedup_report.process_trees_decoded.append(process_tree_decoded)
-            except:
-                logger.exception('Could not find process tree split() character.')        
+        for decoded_process_tree in dedup_report.process_trees_decoded:
+            if '.split(' in decoded_process_tree.lower():
+                try:
+                    split_char_pattern = re.compile(r'\.split\([\'\"\s]*(.*?)[\'\"\s]*\)', re.IGNORECASE)
+                    split_char = str(split_char_pattern.search(decoded_process_tree).group(1))
+                    if split_char:
+                        new_process_tree_decoded = ' '.join(decoded_process_tree.split(split_char))
+                        new_process_tree_decoded = new_process_tree_decoded.replace("'+'", '')
+                        new_process_tree_decoded = new_process_tree_decoded.replace('"+"', '')
+                        new_process_tree_decoded = new_process_tree_decoded.replace('\'', ' ')
+                        new_process_tree_decoded = new_process_tree_decoded.replace('\"', ' ')
+                        dedup_report.process_trees_decoded.append(new_process_tree_decoded)
+                except:
+                    logger.exception('Could not find process tree split() character.')        
 
         # Dedup the process tree URLs. Start by just adding the URLs from each report.
         dedup_report.process_tree_urls += report.process_tree_urls
