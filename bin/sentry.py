@@ -489,7 +489,7 @@ def process_event(event):
         # Try to get the event description from the Overview section.
         overview_section = wiki.get_section('overview')
         try:
-            description = overview_section.find('p').text
+            description = overview_section.find('p').text.replace('"', '\\"')
         except:
             description = ''
 
