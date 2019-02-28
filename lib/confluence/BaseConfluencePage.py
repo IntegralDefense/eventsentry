@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import requests
+import time
 
 from lib.confluence.ConfluenceConnector import *
 
@@ -48,7 +49,14 @@ class BaseConfluencePage(ConfluenceConnector):
     def cache_page(self):
         # Perform the API call to get the page.
         params = {'title': self.page_title, 'expand': 'body.storage,version', 'spaceKey': self.space_key}
-        r = requests.get(self.api_url, auth=(self.username, self.password), params=params, verify=self.requests_verify)
+        successful = False
+        while not successful:
+            try:
+                r = requests.get(self.api_url, auth=(self.username, self.password), params=params, verify=self.requests_verify)
+                successful = True
+            except:
+                self.logger.exception('Unable to cache the Confluence page: {}'.format(params['title']))
+                time.sleep(5)
         
         # If the call was successful, check if a result was actually returned.
         if self._validate_request(r, error_msg="Error with cache_page Confluence API query."):
