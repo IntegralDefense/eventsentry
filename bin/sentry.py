@@ -29,6 +29,7 @@ from lib.constants import HOME_DIR, GETITINTOCRITS, BUILD_RELATIONSHIPS
 from lib.event import Event
 from lib.confluence.ConfluenceEventPage import ConfluenceEventPage
 from lib.intel import EventIntel
+from pysip import Client
 
 # Load the config file.
 config_path = os.path.join(HOME_DIR, 'etc', 'local', 'config.ini')
@@ -160,9 +161,25 @@ def process_event(event):
     logger.debug('Connecting to the CRITs API: {}'.format(api_url))
     crits_api = CRITsAPI(api_url=api_url, api_key=api_key, username=api_user, verify=cert)
 
+    # Create a SIP connection.
+    if config.getboolean('production', 'sip_verify'):
+        sip_verify_cert = config.get('production', 'sip_verify_cert')
+        if sip_verify_cert:
+            sip_verify = sip_verify_cert
+        else:
+            sip_verify = True
+    else:
+        sip_verify = False
+    sip_host = config.get('production', 'sip_host')
+    sip_apikey = config.get('production', 'sip_apikey')
+    sip = Client(sip_host, sip_apikey, verify=sip_verify)
+
     # Get the valid campaigns from CRITs, excluding the "Campaign" campaign.
     crits_campaigns = list(mongo_connection.find_all('campaigns'))
     campaign_names = [c['name'] for c in crits_campaigns if not c['name'] == 'Campaign']
+
+    # Get the valid campaigns from SIP.
+    sip_campaign_names = [c['name'] for c in sip.get('campaigns')]
 
     # Store the CRITs campaign names with a lowercase wiki tag version.
     campaign_dict = {}
@@ -171,7 +188,7 @@ def process_event(event):
 
     # Create the event object.
     try:
-        e = Event(event['id'], event['name'], mongo_connection)
+        e = Event(event['id'], event['name'], mongo_connection, sip)
     except:
         logger.exception('Error creating the Event object: {}'.format(event['name']))
         return
@@ -199,6 +216,18 @@ def process_event(event):
         else:
             wiki_refresh = True
             logger.info('Forcing event refresh. Updating wiki: {}'.format(e.json['name']))
+
+        """
+        FIGURE OUT THE EVENT SOURCE
+        """
+
+        wiki_labels = wiki.get_labels()
+        if 'valvoline' in wiki_labels:
+            event_source = 'Valvoline'
+        elif 'ashland' in wiki_labels:
+            event_source = 'Ashland'
+        else:
+            event_source = 'Integral'
 
         """
         ADD ANY WHITELISTED INDICATORS FROM THE SUMMARY TABLE TO CRITs
@@ -274,6 +303,44 @@ def process_event(event):
                     except:
                         logger.exception('Error adding "{}" indicator "{}" to CRITs whitelist'.format(i['type'], i['value']))
 
+            # Add the whitelisted indicators to the SIP whitelist.
+            for i in whitelisted_indicators:
+
+                # If this is a "URI - Path" or "URI - URL" indicator, check its relationships to see if its
+                # corresponding "URI - Domain Name" or "Address - ipv4-addr" indicator was also checked. If it was,
+                # we want to ignore the path and URL indicators since the domain/IP serves as a least common denominator.
+                # This prevents the SIP whitelist from ballooning in size and slowing things down over time.
+                skip = False
+                if i['type'] == 'URI - Path' or i['type'] == 'URI - URL':
+
+                    # Loop over the indicators in the event JSON to find the matching indicator.
+                    for json_indicator in e.json['indicators']:
+                        if i['type'] == json_indicator['type'] and i['value'] == json_indicator['value']:
+
+                            # Loop over the whitelisted indicators and see any of them are a whitelisted (checked)
+                            # domain name or IP address. If the domain/IP appears in the relationships (for the
+                            # "URI - Path" indicators) or in the value (for "URI - URL" indicators), we can ignore it.
+                            relationships = json_indicator['relationships']
+                            for x in whitelisted_indicators:
+                                if x['type'] == 'URI - Domain Name' or x['type'] == 'Address - ipv4-addr':
+                                    if any(x['value'] in rel for rel in relationships) or x['value'] in i['value']:
+                                        logger.debug('Ignoring redundant "{}" indicator "{}" for SIP whitelist.'.format(i['type'], i['value']))
+                                        skip = True
+
+                if not skip:
+                    logger.warning('Adding "{}" indicator "{}" to SIP whitelist.'.format(i['type'], i['value']))
+
+                    try:
+                        data = {'references': [{'source': event_source, 'reference': wiki.get_page_url()}],
+                                'status': 'DEPRECATED',
+                                'tags': ['whitelist:es'],
+                                'type': i['type'],
+                                'username': 'eventsentry',
+                                'value': i['value']}
+                        result = sip.post('indicators', data)
+                    except:
+                        logger.exception('Error adding "{}" indicator "{}" to SIP whitelist'.format(i['type'], i['value']))
+
         """
         READ MANUAL INDICATORS FROM WIKI PAGE AND ADD NEW ONES TO CRITS
         """
@@ -325,6 +392,59 @@ def process_event(event):
                         logger.error('Disabled deleted "{}" manual indicator "{}" in CRITs: {}'.format(old_indicator['type'], old_indicator['value'], crits_id))
                 except:
                     logger.exception('Error disabling deleted "{}" manual indicator "{}" in CRITs'.format(old_indicator['type'], old_indicator['value']))
+
+        """
+        READ MANUAL INDICATORS FROM WIKI PAGE AND ADD NEW ONES TO SIP
+        """
+
+        # Read whatever manual indicators are listed on the wiki page so they can be added to SIP and the event.
+        manual_indicators = wiki.read_manual_indicators()
+
+        for i in manual_indicators:
+
+            # Add a "manual_indicator" tag to the indicators so that we can exclude them from the
+            # monthly indicator pruning process.
+            i['tags'].append('manual_indicator')
+
+            # Try to add the indicator to SIP. A RequestError will be raised it it already exists.
+            try:
+                # Assemble the correct tags to add to this indicator.
+                ignore_these_tags = config.get('production', 'ignore_these_labels')
+                add_these_tags = [tag for tag in e.json['tags'] if not tag in ignore_these_tags]
+                i['tags'] += add_these_tags
+
+                # Perform the API call to add the indicator.
+                data = {'references': [{'source': event_source, 'reference': wiki.get_page_url()}],
+                        'tags': i['tags'],
+                        'type': i['type'],
+                        'username': 'eventsentry',
+                        'value': i['value']}
+                result = sip.post('indicators', data)
+                logger.warning('Added "{}" manual indicator "{}" to SIP: {}'.format(i['type'], i['value'], result['id']))
+            except:
+                logger.exception('Error adding "{}" manual indicator "{}" to SIP'.format(i['type'], i['value']))
+
+        # Check if there are any manual indicators in the event JSON that do not appear in this current
+        # reading of the Manual Indicators section. This implies that someone removed something from the
+        # table on the wiki page and refreshed the page. Presumably this means they did not actually want
+        # that indicator, so the best we can do for now it to change its status to Informational.
+        # TODO: Possible improvement to this would be to search for FA Queue ACE alerts for this indicator
+        # and FP them, which would also set the indicator's status to Informational.
+        old_manual_indicators = [i for i in e.json['indicators'] if 'manual_indicator' in i['tags']]
+        for old_indicator in old_manual_indicators:
+            if not [i for i in manual_indicators if i['type'] == old_indicator['type'] and i['value'] == old_indicator['value']]:
+                try:
+                    # Find the indicator's SIP ID and disable it.
+                    result = sip.get('indicators?type={}&value={}'.format(old_indicator['type'], old_indicator['value']))
+                    if result['items']:
+                        id_ = result['items'][0]['id']
+
+                        data = {'status': 'INFORMATIONAL'}
+                        result = sip.put('indicators/{}'.format(id_), data)
+
+                        logger.error('Disabled deleted "{}" manual indicator "{}" in SIP: {}'.format(old_indicator['type'], old_indicator['value'], id_))
+                except:
+                    logger.exception('Error disabling deleted "{}" manual indicator "{}" in SIP'.format(old_indicator['type'], old_indicator['value']))
 
         """
         RE-SETUP THE EVENT
@@ -390,6 +510,34 @@ def process_event(event):
                 # Add the indicator to the queried cache.
                 queried_indicators[type_value] = i['status']
             # We've already queried CRITs for this type/value, so just set the status.
+            else:
+                i['status'] = queried_indicators[type_value]
+
+        """
+        ADD SIP STATUS OF EACH INDICATOR TO THE EVENT JSON
+        """
+
+        # Used as a cache so we don't query SIP for the same indicator.
+        queried_indicators = {}
+
+        # Query SIP to get the status of the indicators.
+        logger.debug('Querying SIP for indicator statuses.')
+
+        for i in e.json['indicators']:
+            type_value = '{}{}'.format(i['type'], i['value'])
+
+            # Continue if we haven't already processed this type/value pair indicator.
+            if not type_value in queried_indicators:
+
+                # Get the indicator status from SIP. Ignore any indicators that were already set to Informational.
+                if not i['status'] == 'Informational':
+                    result = sip.get('indicators?type={}&value={}'.format(i['type'], i['value']))
+                    if result['items']:
+                        i['status'] = result['items'][0]['status']
+
+                # Add the indicator to the queried cache.
+                queried_indicators[type_value] = i['status']
+            # We've already queried SIP for this type/value, so just set the status.
             else:
                 i['status'] = queried_indicators[type_value]
 
@@ -486,6 +634,27 @@ def process_event(event):
         else:
             source = 'Integral'
 
+        # Add each good indicator into SIP.
+        good_indicators, whitelisted_indicators = wiki.read_indicator_summary_table()
+        for i in good_indicators:
+            tags = sorted(list(set(i['tags'] + e.json['tags'])))
+            ignore_these_labels = config.get('production', 'ignore_these_labels').split(',')
+            for label in ignore_these_labels:
+                try:
+                    tags.remove(label)
+                except:
+                    pass
+
+            try:
+                data = {'references': [{'source': source, 'reference': wiki.get_page_url()}],
+                        'tags': tags,
+                        'type': i['type'],
+                        'username': 'eventsentry',
+                        'value': i['value']}
+                result = sip.post('indicators', data) 
+            except:
+                logger.exception('Error when adding "{}" indicator "{}" into SIP.'.format(i['type'], i['value']))
+
         # Try to get the event description from the Overview section.
         overview_section = wiki.get_section('overview')
         try:
@@ -493,7 +662,7 @@ def process_event(event):
         except:
             description = ''
 
-        if source and description :
+        if source and description:
             commands = []
 
             # CD into the intel directory.
