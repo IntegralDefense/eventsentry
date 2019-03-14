@@ -36,7 +36,7 @@ from lib.eventwhitelist import EventWhitelist
 
 
 class Event():
-    def __init__(self, ace_id, name, mongo_connection, debug=False):
+    def __init__(self, ace_id, name, mongo_connection, sip, debug=False):
         """
         An 'event' as we define it is a collection of 'critical files' and the
         intel associated with them. I consider the following items to be the
