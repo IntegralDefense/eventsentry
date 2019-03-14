@@ -332,7 +332,7 @@ def process_event(event):
 
                     try:
                         data = {'references': [{'source': event_source, 'reference': wiki.get_page_url()}],
-                                'status': 'DEPRECATED',
+                                'status': 'Deprecated',
                                 'tags': ['whitelist:es'],
                                 'type': i['type'],
                                 'username': 'eventsentry',
@@ -439,7 +439,7 @@ def process_event(event):
                     if result['items']:
                         id_ = result['items'][0]['id']
 
-                        data = {'status': 'INFORMATIONAL'}
+                        data = {'status': 'Informational'}
                         result = sip.put('indicators/{}'.format(id_), data)
 
                         logger.error('Disabled deleted "{}" manual indicator "{}" in SIP: {}'.format(old_indicator['type'], old_indicator['value'], id_))
