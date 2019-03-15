@@ -517,6 +517,7 @@ def process_event(event):
         ADD SIP STATUS OF EACH INDICATOR TO THE EVENT JSON
         """
 
+        """
         # Used as a cache so we don't query SIP for the same indicator.
         queried_indicators = {}
 
@@ -540,6 +541,7 @@ def process_event(event):
             # We've already queried SIP for this type/value, so just set the status.
             else:
                 i['status'] = queried_indicators[type_value]
+        """
 
         """
         RUN ALL OF THE CLEAN INDICATOR MODULES
