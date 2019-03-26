@@ -23,7 +23,7 @@ class Module(DetectionModule):
             for tree in trees:
                 tree = tree.lower()
 
-                processes = ['DHCP Service', 'LAN Monitor', 'WAN Host']
+                processes = ['DHCP Service', 'LAN Monitor', 'WAN Host', 'NAS Host']
                 for process in processes:
                     if process.lower() in tree:
                         self.detections.append('Detected Nanocore by the process tree: {}'.format(process))
