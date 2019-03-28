@@ -348,12 +348,44 @@ def dedup_reports(report_list, whitelist):
                 pass
         dedup_report.process_trees_decoded.append(process_tree_decoded)
 
+        # Remove ` backtick and other basic Powershell obfuscation.
+        new_trees = []
+        for decoded_process_tree in dedup_report.process_trees_decoded:
+            if 'powershell' in decoded_process_tree.lower():
+                new_trees.append(decoded_process_tree.replace('`', ''))
+        dedup_report.process_trees_decoded += new_trees
+
+        # Remove Powershell string formatter obfuscation.
+        new_trees = []
+        for decoded_process_tree in dedup_report.process_trees_decoded:
+            formatter_pattern = re.compile(r'(\([\'\"](({(\d+)})+)[\'\"]\s*\-f\s*(([\'\"][^\'\"]+[\'\"],*)+)\))', re.IGNORECASE)
+            results = formatter_pattern.findall(decoded_process_tree)
+            if results:
+                for result in results:
+                    """ ('("{0}{1}"-f\'JDxA\',\'QDc\')', '{0}{1}', '{1}', '1', "'JDxA','QDc'", "'QDc'") """
+                    full_match = result[0]
+                    order = result[1][1:-1] # 0}{1
+                    items = result[4] # "'JDxA','QDc'"
+
+                    order_list = order.split('}{')
+                    order_ints = [int(x) for x in order_list]
+                    
+                    items_list = [i.replace('\'', '').replace('"', '') for i in items.split(',')]
+
+                    if len(order_ints) == len(items_list):
+                        deobfuscated_string = ''
+                        for i in order_ints:
+                            deobfuscated_string += items_list[i]
+                        decoded_process_tree = decoded_process_tree.replace(full_match, deobfuscated_string)
+                new_trees.append(decoded_process_tree)
+        dedup_report.process_trees_decoded += new_trees
+
         # Try to decode string .split() obfuscation (used by Emotet and others)
         new_trees = []
         for decoded_process_tree in dedup_report.process_trees_decoded:
-            if '.split(' in decoded_process_tree.lower():
+            if 'split' in decoded_process_tree.lower():
                 try:
-                    split_char_pattern = re.compile(r'\.split\([\'\"\s]*(.*?)[\'\"\s]*\)', re.IGNORECASE)
+                    split_char_pattern = re.compile(r'\.[\'\"]*split[\'\"]*\([\'\"\s]*(.*?)[\'\"\s]*\)', re.IGNORECASE)
                     split_char = str(split_char_pattern.search(decoded_process_tree).group(1))
                     if split_char:
                         new_process_tree_decoded = ' '.join(decoded_process_tree.split(split_char))
@@ -361,6 +393,7 @@ def dedup_reports(report_list, whitelist):
                         new_process_tree_decoded = new_process_tree_decoded.replace('"+"', '')
                         new_process_tree_decoded = new_process_tree_decoded.replace('\'', ' ')
                         new_process_tree_decoded = new_process_tree_decoded.replace('\"', ' ')
+                        new_process_tree_decoded = new_process_tree_decoded.replace('. ', ' ')
                         new_trees.append(new_process_tree_decoded)
                 except:
                     logger.exception('Could not find process tree split() character.')
@@ -369,9 +402,9 @@ def dedup_reports(report_list, whitelist):
         # Try to decode string .invoke() obfuscation (used by Emotet and others)
         new_trees = []
         for decoded_process_tree in dedup_report.process_trees_decoded:
-            if '.invoke(' in decoded_process_tree.lower():
+            if 'invoke' in decoded_process_tree.lower():
                 try:
-                    split_char_pattern = re.compile(r'\.invoke\([\'\"\s]*(.)[\'\"\s]*\)', re.IGNORECASE)
+                    split_char_pattern = re.compile(r'\.[\'\"]*invoke[\'\"]*\([\'\"\s]*(.*?)[\'\"\s]*\)', re.IGNORECASE)
                     split_char = str(split_char_pattern.search(decoded_process_tree).group(1))
                     if split_char:
                         new_process_tree_decoded = ' '.join(decoded_process_tree.split(split_char))
@@ -379,6 +412,7 @@ def dedup_reports(report_list, whitelist):
                         new_process_tree_decoded = new_process_tree_decoded.replace('"+"', '')
                         new_process_tree_decoded = new_process_tree_decoded.replace('\'', ' ')
                         new_process_tree_decoded = new_process_tree_decoded.replace('\"', ' ')
+                        new_process_tree_decoded = new_process_tree_decoded.replace('. ', ' ')
                         new_trees.append(new_process_tree_decoded)
                 except:
                     logger.exception('Could not find process tree invoke() character.')
