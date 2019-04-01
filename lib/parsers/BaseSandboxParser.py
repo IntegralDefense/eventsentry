@@ -386,7 +386,10 @@ def dedup_reports(report_list, whitelist):
             if 'split' in decoded_process_tree.lower():
                 try:
                     split_char_pattern = re.compile(r'\.[\'\"]*split[\'\"]*\([\'\"\s]*(.*?)[\'\"\s]*\)', re.IGNORECASE)
-                    split_char = str(split_char_pattern.search(decoded_process_tree).group(1))
+                    try:
+                        split_char = str(split_char_pattern.search(decoded_process_tree).group(1))
+                    except AttributeError:
+                        split_char = None
                     if split_char:
                         new_process_tree_decoded = ' '.join(decoded_process_tree.split(split_char))
                         new_process_tree_decoded = new_process_tree_decoded.replace("'+'", '')
@@ -405,7 +408,10 @@ def dedup_reports(report_list, whitelist):
             if 'invoke' in decoded_process_tree.lower():
                 try:
                     split_char_pattern = re.compile(r'\.[\'\"]*invoke[\'\"]*\([\'\"\s]*(.*?)[\'\"\s]*\)', re.IGNORECASE)
-                    split_char = str(split_char_pattern.search(decoded_process_tree).group(1))
+                    try:
+                        split_char = str(split_char_pattern.search(decoded_process_tree).group(1))
+                    except AttributeError:
+                        split_char = None
                     if split_char:
                         new_process_tree_decoded = ' '.join(decoded_process_tree.split(split_char))
                         new_process_tree_decoded = new_process_tree_decoded.replace("'+'", '')
