@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
 import configparser
+import datetime
 import logging, logging.handlers
 import multiprocessing
 import MySQLdb
 import os
+import requests
 import signal
 import subprocess
 import sys
@@ -596,6 +598,25 @@ def process_event(event):
                         logger.info('Tag manually removed from wiki page: {}'.format(tag))
                     except:
                         pass
+
+        """
+        NOTIFY SLACK OF AN INCIDENT
+        """
+
+        if 'incidents' in e.json['tags'] and not e.json['slack_notify']:
+            e.json['slack_notify'] = str(datetime.datetime.now())
+            data = {'text': '<!channel> :rotating_light: Possible incident detected: {}'.format(e.json['wiki_url'])}
+            try:
+                slack_webhook_url = config.get('production', 'slack_webhook_url')
+                proxy = config.get('production', 'proxy')
+                if slack_webhook_url:
+                    if proxy:
+                        requests.post(config.get('production', 'slack_webhook_url'), json=data, proxies={'http': proxy, 'https': proxy})
+                    else:
+                        requests.post(config.get('production', 'slack_webhook_url'), json=data)
+            except:
+                e.json['slack_notify'] = ''
+                logger.exception('Unable to notify Slack of incident')
 
         """
         UPDATE THE WIKI PAGE
