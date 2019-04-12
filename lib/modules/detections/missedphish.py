@@ -28,14 +28,13 @@ class Module(DetectionModule):
 
         # Get the start time.
         try:
-            received_time = datetime.datetime.strptime(self.event_json['emails'][0]['received_time'][0:19], '%Y-%m-%d %H:%M:%S')
-            delta = datetime.timedelta(hours=1)
-            start_time = (received_time - delta).strftime('%Y-%m-%d %H:%M:%S')
-            end_time = (received_time + delta).strftime('%Y-%m-%d %H:%M:%S')
+            received_time = datetime.datetime.strptime(self.event_json['emails'][-1]['received_time'][0:19], '%Y-%m-%d %H:%M:%S')
+            received_time = received_time.replace(hour=0, minute=0, second=0, microsecond=0)
+            end_time = received_time.replace(hour=23, minute=59, second=59, microsecond=0)
+            start_time = received_time.strftime('%Y-%m-%d %H:%M:%S')
         except:
-            self.logger.exception('Error making start and end time.')
+            self.logger.exception('Error making start time and end time.')
             start_time = None
-            end_time = None
 
         # Get all of the existing message-ids in the event.
         existing_message_ids = [email['message_id'] for email in self.event_json['emails']]
@@ -78,7 +77,7 @@ class Module(DetectionModule):
                     output_lines = []
 
                     # This is the actual command line version of the Splunk query.
-                    command = '{} --enviro {} -s "{}" --json "index=email* mail_from=\\"*{}*\\" subject=\\"*{}*\\"| table message_id subject"'.format(SPLUNKLIB, company, start_time, sender, subject)
+                    command = '{} --enviro {} -s "{}" -e "{}" --json "index=email* mail_from=\\"*{}*\\" subject=\\"*{}*\\"| table message_id subject"'.format(SPLUNKLIB, company, start_time, end_time, sender, subject)
                     try:
                         output = subprocess.check_output(command, shell=True).decode('utf-8')
 
@@ -101,7 +100,7 @@ class Module(DetectionModule):
                     output_lines = []
 
                     # This is the actual command line version of the Splunk query.
-                    command = '{} --enviro {} -s "{}" --json "index=email* mail_from=\\"*{}*\\" | table message_id subject"'.format(SPLUNKLIB, company, start_time, sender)
+                    command = '{} --enviro {} -s "{}" -e "{}" --json "index=email* mail_from=\\"*{}*\\" | table message_id subject"'.format(SPLUNKLIB, company, start_time, end_time, sender)
                     try:
                         output = subprocess.check_output(command, shell=True).decode('utf-8')
 
@@ -124,7 +123,7 @@ class Module(DetectionModule):
                     output_lines = []
 
                     # This is the actual command line version of the Splunk query.
-                    command = '{} --enviro {} -s "{}" --json "index=email* attachment_hashes=\\"*{}*\\" | table message_id subject"'.format(SPLUNKLIB, company, start_time, attachment_hash)
+                    command = '{} --enviro {} -s "{}" -e "{}" --json "index=email* attachment_hashes=\\"*{}*\\" | table message_id subject"'.format(SPLUNKLIB, company, start_time, end_time, attachment_hash)
                     try:
                         output = subprocess.check_output(command, shell=True).decode('utf-8')
 
@@ -157,7 +156,7 @@ class Module(DetectionModule):
                             alert_type = 'eventsentry',
                             desc = 'Event Sentry - Possible Missed Phish: {}'.format(subject),
                             event_time = datetime.datetime.now(),
-                            details = {})
+                            details = {'event_name': self.event_json['name'], 'wiki_url': self.event_json['wiki_url']})
                         alert.add_observable('message_id', message_id)
 
                         self.detections.append('! DETECTED POSSIBLE MISSED PHISH: {} <--- CHECK ACE FOR THE ALERT'.format(message_id))
