@@ -202,6 +202,9 @@ def process_event(event):
 
     # Connect to the wiki page.
     wiki = ConfluenceEventPage(e.name_wiki, mongo_connection)
+    
+    # Add the wiki page URL to the event JSON.
+    e.json['wiki_url'] = wiki.get_page_url()
 
     # If the event has changed or we are forcing a refresh, we need to update the wiki page.
     if e.changed or wiki.is_page_refresh_checked():
