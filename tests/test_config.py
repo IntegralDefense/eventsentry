@@ -1,5 +1,4 @@
 import configparser
-import MySQLdb
 import os
 import subprocess
 import sys
@@ -102,35 +101,6 @@ class ConfigTestCase(unittest.TestCase):
         mongo_connection.connect()
         indicator = mongo_connection.find_one('indicators', {'status': 'Analyzed'})
         self.assertTrue(indicator)
-
-    #################
-    ##             ##
-    ##  ACE TESTS  ##
-    ##             ##
-    #################
-
-    def test_ace_ssh_connection(self):
-        """ Make sure we can SSH to the ACE server and access the alert root directory """
-
-        ace_server = config.get('production', 'ace_server')
-        ace_ssh_user = config.get('production', 'ace_ssh_user')
-        ace_ssh_key = config.get('production', 'ace_ssh_key')
-        ace_alert_root = config.get('production', 'ace_alert_root')
-
-        ssh_command = 'ssh -i {} {}@{} "ls {}"'.format(ace_ssh_key, ace_ssh_user, ace_server, ace_alert_root)
-        subprocess.check_call(ssh_command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=True)
-
-    def test_ace_db_connection(self):
-        """ Make sure we can access the ACE MySQL database """
-
-        ace_db_server = config.get('production', 'ace_db_server')
-        ace_db_user = config.get('production', 'ace_db_user')
-        ace_db_pass = config.get('production', 'ace_db_pass')
-        ace_db_name = config.get('production', 'ace_db_name')
-        db = MySQLdb.connect(host=ace_db_server, user=ace_db_user, passwd=ace_db_pass, db=ace_db_name)
-        c = db.cursor()
-        c.close()
-        db.close()
 
     ########################
     ##                    ##
