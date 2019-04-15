@@ -4,7 +4,7 @@ import logging
 import re
 import subprocess
 
-from ace_client_lib.client import Alert
+from lib.ace import Alert, AlertSubmitException
 from lib.constants import SPLUNKLIB
 from lib.modules.DetectionModule import *
 

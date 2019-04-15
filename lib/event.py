@@ -20,6 +20,7 @@ this_dir = os.path.dirname(__file__)
 if this_dir not in sys.path:
     sys.path.insert(0, this_dir)
 
+from lib.ace import ace_api
 import lib.modules.detections
 import lib.modules.indicators
 from lib.constants import HOME_DIR
@@ -36,7 +37,7 @@ from lib.eventwhitelist import EventWhitelist
 
 
 class Event():
-    def __init__(self, ace_id, name, mongo_connection, sip, debug=False):
+    def __init__(self, ace_event, mongo_connection, sip, debug=False):
         """
         An 'event' as we define it is a collection of 'critical files' and the
         intel associated with them. I consider the following items to be the
@@ -70,12 +71,13 @@ class Event():
         # Validate the event name. We will accept names in these forms:
         # 20160101_test_event
         # 20160101 test event
+        name = '{}_{}'.format(ace_event['creation_date'].replace('-', ''), ace_event['name'].replace(' ', '_'))
         if not re.match(r'^[0-9]{8}(_| )', name):
             raise ValueError(
                 'Event name does not match naming convention of YYYYMMDD_event_name or "YYYYMMDD event name"')
 
-        # Set the ACE event ID.
-        self.ace_id = ace_id
+        # Save the ACE event.
+        self.ace_event = ace_event
 
         # Set the event name first. This is required in order to create the log file.
         self.name_disk = name.replace(' ', '_')
@@ -123,10 +125,10 @@ class Event():
         # trigger a full wiki update and a rewrite of the .crits directory.
         self.changed = False
 
-    def setup(self, alert_paths=[], manual_indicators=[], force=False):
+    def setup(self, alert_uuids=[], manual_indicators=[], force=False):
         """ Parse everything in the event directory to build the event.json """
 
-        if alert_paths:
+        if alert_uuids:
             # Make sure the event directory exists.
             if not os.path.exists(self.path):
                 #os.makedirs(self.path, mode=0o770)
@@ -142,19 +144,37 @@ class Event():
 
             # Figure out which alerts are new to the event.
             existing_alert_paths = [f['path'] for f in self.json['files'] if f['category'] == 'ace_alert']
-            new_alert_paths = []
-            for alert_path in alert_paths:
-                uuid = os.path.basename(alert_path)
-                if not any(uuid in existing_path for existing_path in existing_alert_paths):
-                    new_alert_paths.append(alert_path)
+            new_alert_uuids = []
+            for alert_uuid in alert_uuids:
+                if not any(alert_uuid in existing_path for existing_path in existing_alert_paths):
+                    new_alert_uuids.append(alert_uuid)
 
-            # Rsync any new alert paths we were given.
-            self.rsync_alerts(new_alert_paths)
+            # Download any new alerts into the event directory.
+            # NOTE: THIS IS A TEMPORARY HACK UNTIL ACE CAN HANDLE THE API REDIRECTS!
+            for alert_uuid in new_alert_uuids:
+                alert_path = os.path.join(self.path, alert_uuid)
+                if not os.path.exists(alert_path):
+                    for ace_server in self.config.get('production', 'ace_servers').split(','):
+                        try:
+                            ace_api.set_default_remote_host(ace_server)
+                            ace_api.download(alert_uuid, alert_path)
+                            ace_api.set_default_remote_host(self.config.get('production', 'ace_api_server'))
+                            break
+                        except Exception as e:
+                            if 'BAD REQUEST for url' in str(e):
+                                try:
+                                    shutil.rmtree(alert_path)
+                                except:
+                                    self.logger.exception('There was an error trying to delete alert from event: {}'.format(alert_path))
+                            else:
+                                self.logger.exception('Unable to download ACE alert!')
+                        
+                    self.changed = True
 
             # Figure out if any alerts were removed from the event.
             for a in existing_alert_paths:
                 uuid = a.split('/')[-2]
-                if not any(uuid in alert_path for alert_path in alert_paths):
+                if not any(uuid in alert_uuid for alert_uuid in alert_uuids):
                     self.logger.warning('Alert has been removed from the ACE event: {}'.format(uuid))
                     try:
                         shutil.rmtree(os.path.dirname(a))
@@ -433,7 +453,7 @@ class Event():
             # Start with a copy of the event JSON. We want to remove a few things.
             output_json = dict(self.json)
             del output_json['ace_alerts']
-            del output_json['ace_id']
+            del output_json['ace_event']
             del output_json['ace_screenshots']
             del output_json['campaign']
             del output_json['files']
@@ -762,7 +782,7 @@ class Event():
         except:
             self.logger.debug('JSON not found. Using template instead.')
             j = {'ace_alerts': [],
-                 'ace_id': self.ace_id,
+                 'ace_event': self.ace_event,
                  'campaign': {},
                  'detections': [],
                  'detections_extra': [],

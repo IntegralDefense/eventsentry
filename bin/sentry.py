@@ -4,7 +4,6 @@ import configparser
 import datetime
 import logging, logging.handlers
 import multiprocessing
-import MySQLdb
 import os
 import requests
 import signal
@@ -27,6 +26,8 @@ if this_dir not in sys.path:
 from critsapi.critsdbapi import CRITsDBAPI
 from critsapi.critsapi import CRITsAPI
 from lib import indicator
+from lib.ace import ace_api
+from lib.config import config
 from lib.constants import HOME_DIR, GETITINTOCRITS, BUILD_RELATIONSHIPS
 from lib.event import Event
 from lib.confluence.ConfluenceEventPage import ConfluenceEventPage
@@ -39,11 +40,6 @@ if not os.path.exists(config_path):
     raise FileNotFoundError('Unable to locate config.ini at: {}'.format(config_path))
 config = configparser.ConfigParser()
 config.read(config_path)
-
-# Add the ACE client library to sys.path
-ace_client_library = config['production']['ace_client_library']
-if ace_client_library not in sys.path:
-    sys.path.append(ace_client_library)
 
 # Set up logging.
 log_path = os.path.join(HOME_DIR, 'logs', 'eventsentry.log')
@@ -76,77 +72,23 @@ def get_open_events():
     """
 
     try:
-        open_events = []
-
-        # Connect to the database and get a cursor.
-        ssl_settings = {'ca': config['production']['ace_ca_bundle']}
-        db = MySQLdb.connect(host=config['production']['ace_db_server'], user=config['production']['ace_db_user'], passwd=config['production']['ace_db_pass'], db=config['production']['ace_db_name'], ssl=ssl_settings)
-        c = db.cursor()
-        logger.debug('Connected to ACE database.')
-
-        # Query the database for the open events.
-        c.execute('SELECT * FROM events WHERE status="OPEN"')
-
-        # Fetch the results and reformat the event names.
-        rows = c.fetchall()
-        for row in rows:
-            _id = row[0]
-            year = row[1].year
-            month = str(row[1].month).zfill(2)
-            day = str(row[1].day).zfill(2)
-            name = str(row[2].replace(' ', '_'))
-            event_name = '{}{}{}_{}'.format(year, month, day, name)
-            open_events.append({'id': _id, 'name': event_name, 'alerts': []})
-
-        # Loop over each open event and query the database for its alerts.
-        for event in open_events:
-            c.execute('SELECT * FROM event_mapping WHERE event_id="{}"'.format(event['id']))
-
-            alert_ids = []
-
-            # Fetch the results and get the alert IDs that are in this event.
-            rows = c.fetchall()
-            for row in rows:
-                alert_ids.append(row[1])
-
-            # Loop over each alert ID and get its storage path.
-            for alert_id in alert_ids:
-                c.execute('SELECT * FROM alerts WHERE id="{}"'.format(alert_id))
-
-                # Fetch the results and get the storage path.
-                rows = c.fetchall()
-                for row in rows:
-                    storage_path = row[3]
-                    event['alerts'].append(storage_path)
-
-        # Close the cursor and database connection.
-        c.close()
-        db.close()
-
-        logger.info('There are {} open events.'.format(len(open_events)))
+        open_events = ace_api.get_open_events()
+        num_open_events = len(open_events)
+        if num_open_events == 1:
+            logging.info('There is {} open event.'.format(num_open_events))
+        else:
+            logging.info('There are {} open events.'.format(len(open_events)))
 
         return open_events
-    except:
-        logger.exception('Could not get open events from ACE!')
+    except requests.exceptions.ConnectionError:
+        logging.exception('Could not get open events from ACE!')
         return []
-
 
 def process_event(event):
     """ Process the event. """
 
     logger.info('Starting to process event: {}'.format(event['name']))
     start_time = time.time()
-
-    # Connect to the ACE database.
-    connected = False
-    ssl_settings = {'ca': config['production']['ace_ca_bundle']}
-    while not connected:
-        try:
-            ace_db = MySQLdb.connect(host=config['production']['ace_db_server'], user=config['production']['ace_db_user'], passwd=config['production']['ace_db_pass'], db=config['production']['ace_db_name'], ssl=ssl_settings)
-            connected = True
-        except:
-            logger.exception('Unable to connect to the ACE database')
-            time.sleep(5)
 
     # Create a CRITs Mongo connection.
     mongo_uri = config.get('production', 'crits_mongo_url')
@@ -190,14 +132,14 @@ def process_event(event):
 
     # Create the event object.
     try:
-        e = Event(event['id'], event['name'], mongo_connection, sip)
+        e = Event(event, mongo_connection, sip)
     except:
         logger.exception('Error creating the Event object: {}'.format(event['name']))
         return
 
     # Build the event.json file.
     try:
-        e.setup(alert_paths=event['alerts'])
+        e.setup(alert_uuids=event['alerts'])
     except:
         logger.exception('Error setting up the Event object: {}'.format(event['name']))
         return
@@ -467,6 +409,7 @@ def process_event(event):
             for email in e.json['emails']:
                 email['remediated'] = False
 
+                """
                 key = ''
                 if email['original_recipient']:
                     key = '{}:{}'.format(email['message_id'], email['original_recipient'])
@@ -489,6 +432,7 @@ def process_event(event):
                         # (200) [{"address":"recipientuser@domain.com","code":200,"message":"success"}]
                         if '"code":200' in result and '"message":"success"' in result:
                             email['remediated'] = True
+                """
         except:
             logger.exception('Error getting remediation status for e-mail.')
                         
@@ -747,21 +691,13 @@ def process_event(event):
 
                     # If it exists in CRITs, close the event in ACE.
                     try:
-                        c = ace_db.cursor()
-                        c.execute('SELECT * FROM events WHERE status="OPEN" AND id={}'.format(e.json['ace_id']))
-                        if c.fetchone():
-                            c.execute('UPDATE events SET status="CLOSED" WHERE id={}'.format(e.json['ace_id']))
-                            ace_db.commit()
-                            logger.warning('Closed event in ACE: {}'.format(e.json['name']))
-                        c.close()
+                        ace_api.update_event_status(e.json['ace_event']['id'], 'CLOSED')
+                        logger.warning('Closed event in ACE: {}'.format(e.json['name']))
 
                         # Update the wiki to reflect that the event was processed into CRITs.
                         wiki.update_event_processed()
                     except:
                         logger.exception('Error when closing the event in ACE: {}'.format(e.json['name']))
-
-    # Close the ACE database connection.
-    ace_db.close()
 
     logger.info('Finished event "{0:s}" in {1:.5f} seconds.'.format(event['name'], time.time() - start_time))
 
