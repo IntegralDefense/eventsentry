@@ -58,6 +58,19 @@ try:
 except:
     pass
 
+# Create a SIP connection.
+if config.getboolean('production', 'sip_verify'):
+    sip_verify_cert = config.get('production', 'sip_verify_cert')
+    if sip_verify_cert:
+        sip_verify = sip_verify_cert
+    else:
+        sip_verify = True
+else:
+    sip_verify = False
+sip_host = config.get('production', 'sip_host')
+sip_apikey = config.get('production', 'sip_apikey')
+sip = Client(sip_host, sip_apikey, verify=sip_verify)
+
 
 """
 #
@@ -84,7 +97,7 @@ def get_open_events():
         logging.exception('Could not get open events from ACE!')
         return []
 
-def process_event(event):
+def process_event(event, sip_campaign_names):
     """ Process the event. """
 
     logger.info('Starting to process event: {}'.format(event['name']))
@@ -105,25 +118,9 @@ def process_event(event):
     logger.debug('Connecting to the CRITs API: {}'.format(api_url))
     crits_api = CRITsAPI(api_url=api_url, api_key=api_key, username=api_user, verify=cert)
 
-    # Create a SIP connection.
-    if config.getboolean('production', 'sip_verify'):
-        sip_verify_cert = config.get('production', 'sip_verify_cert')
-        if sip_verify_cert:
-            sip_verify = sip_verify_cert
-        else:
-            sip_verify = True
-    else:
-        sip_verify = False
-    sip_host = config.get('production', 'sip_host')
-    sip_apikey = config.get('production', 'sip_apikey')
-    sip = Client(sip_host, sip_apikey, verify=sip_verify)
-
     # Get the valid campaigns from CRITs, excluding the "Campaign" campaign.
     crits_campaigns = list(mongo_connection.find_all('campaigns'))
     campaign_names = [c['name'] for c in crits_campaigns if not c['name'] == 'Campaign']
-
-    # Get the valid campaigns from SIP.
-    sip_campaign_names = [c['name'] for c in sip.get('campaigns')]
 
     # Store the CRITs campaign names with a lowercase wiki tag version.
     campaign_dict = {}
@@ -747,13 +744,16 @@ def start(num_workers=1):
             # Get the list of open events.
             open_events = get_open_events()
 
+            # Get the valid campaigns from SIP.
+            sip_campaign_names = [c['name'] for c in sip.get('campaigns')]
+
             # Create the process pool.
             pool = multiprocessing.Pool(processes=num_workers, initializer=init_worker)
 
             # Build the list of argument tuples for starmap.
             argument_tuples = []
             for event in open_events:
-                argument_tuples.append((event,))
+                argument_tuples.append((event,sip_campaign_names))
 
             # Map the work queue (list of open events) into the pool.
             pool.starmap(process_event, argument_tuples)
