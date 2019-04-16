@@ -32,7 +32,7 @@ from lib.constants import HOME_DIR, GETITINTOCRITS, BUILD_RELATIONSHIPS
 from lib.event import Event
 from lib.confluence.ConfluenceEventPage import ConfluenceEventPage
 from lib.intel import EventIntel
-from pysip import Client
+from pysip import Client, ConflictError
 
 # Load the config file.
 config_path = os.path.join(HOME_DIR, 'etc', 'local', 'config.ini')
@@ -282,6 +282,8 @@ def process_event(event, sip_campaign_names):
                                 'username': 'eventsentry',
                                 'value': i['value']}
                         result = sip.post('indicators', data)
+                    except ConflictError:
+                        pass
                     except:
                         logger.exception('Error adding "{}" indicator "{}" to SIP whitelist'.format(i['type'], i['value']))
 
@@ -365,6 +367,8 @@ def process_event(event, sip_campaign_names):
                         'value': i['value']}
                 result = sip.post('indicators', data)
                 logger.warning('Added "{}" manual indicator "{}" to SIP: {}'.format(i['type'], i['value'], result['id']))
+            except ConflictError:
+                pass
             except:
                 logger.exception('Error adding "{}" manual indicator "{}" to SIP'.format(i['type'], i['value']))
 
@@ -619,6 +623,8 @@ def process_event(event, sip_campaign_names):
                         'username': 'eventsentry',
                         'value': i['value']}
                 result = sip.post('indicators', data) 
+            except ConflictError:
+                pass
             except:
                 logger.exception('Error when adding "{}" indicator "{}" into SIP.'.format(i['type'], i['value']))
 
