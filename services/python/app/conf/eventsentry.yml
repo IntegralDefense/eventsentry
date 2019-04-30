@@ -1,0 +1,1572 @@
+# ███████╗██╗   ██╗███████╗███╗   ██╗████████╗    ███████╗███████╗███╗   ██╗████████╗██████╗ ██╗   ██╗
+# ██╔════╝██║   ██║██╔════╝████╗  ██║╚══██╔══╝    ██╔════╝██╔════╝████╗  ██║╚══██╔══╝██╔══██╗╚██╗ ██╔╝
+# █████╗  ██║   ██║█████╗  ██╔██╗ ██║   ██║       ███████╗█████╗  ██╔██╗ ██║   ██║   ██████╔╝ ╚████╔╝ 
+# ██╔══╝  ╚██╗ ██╔╝██╔══╝  ██║╚██╗██║   ██║       ╚════██║██╔══╝  ██║╚██╗██║   ██║   ██╔══██╗  ╚██╔╝  
+# ███████╗ ╚████╔╝ ███████╗██║ ╚████║   ██║       ███████║███████╗██║ ╚████║   ██║   ██║  ██║   ██║   
+# ╚══════╝  ╚═══╝  ╚══════╝╚═╝  ╚═══╝   ╚═╝       ╚══════╝╚══════╝╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝   ╚═╝
+
+core:
+
+  # Root directory where the event directories are stored
+  event_root: /data/shared/events
+
+  # List of path strings to skip when walking the event directory
+  skip_paths:
+    - ".ace"
+    - ".dmp"
+    - ".pcap"
+    - "/collect/"
+    - "event.json"
+    - "saq.log"
+
+  # Key:Value mapping of possible event/intel sources with their
+  # corresponding wiki tags listed in order of precedence. If both
+  # tags are on a single wiki page, the one listed first will be
+  # considered the primary intel source.
+  event_sources:
+
+    # Wiki page tag: Intel source value
+    company1: Company1
+
+    company2: Company2
+
+network:
+
+  # List of domains to use for the NO_PROXY environment variable
+  no_proxy_domains:
+    - ""
+
+  # Proxy to use for things that don't use proxychains
+  # Example: http://user:pass@host:port
+  proxy: ""
+
+  # User-Agent to use when downloading various Internet resources
+  user_agent: "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/27.0.1453.94 Safari/537.36"
+
+  # True/False to verify HTTPS requests
+  # NOTE: To use a custom certificate to verify the requests, make sure that it is
+  #       mounted in the docker-compose.yml file at the /certificate path.
+  verify_requests: False
+
+ace:
+
+  # Domain/IP of server running the ACE API
+  ace_api_server: ""
+
+  # URL prefix to use to create direct URLs to the ACE alerts
+  # Example: https://yourace.local/saq/analysis?direct=
+  ace_alert_url: ""
+
+  # List of additional ACE systems to try to download alerts from
+  # NOTE: This is a temporary hack until ACE supports API redirects
+  extra_ace_servers:
+    - ""
+
+intel:
+
+  # Default intel source to use for Manual Indicators, whitelisted indicators, etc.
+  default_source: your_company
+
+  crits:
+
+    # True/False to enable CRITS usage
+    enabled: False
+
+    # URL to access the CRITS API
+    # Example: https://yourcrits.local/api/v1
+    crits_api_url: ""
+
+    # User account to use to access the CRITS API
+    crits_api_user: ""
+
+    # API key for the CRITS API user
+    crits_api_key: ""
+
+    # URL to access the CRITS Mongo database
+    # Example: mongodb://yourcrits.local:27017/
+    crits_mongo_url: ""
+
+    # CRITS Mongo database name
+    crits_mongo_db: crits
+
+  sip:
+
+    # True/False to enable SIP usage
+    enabled: False
+
+    # Domain/IP of server running SIP
+    sip_host: ""
+
+    # API key to use for SIP access
+    sip_apikey: ""
+
+package:
+
+  # True/False to enable creating the event packages
+  enabled: False
+
+  # Password to use for the event package
+  intel_zip_password: ""
+
+  # Password to use for the malware.zip file inside the event package
+  malware_zip_password: "infected"
+
+sandbox:
+
+  cuckoo:
+
+    # True/False to enable parsing Cuckoo reports
+    enabled: False
+
+    # Base URL to access the Cuckoo reports
+    # Example: https://yourcuckoo.local:8090
+    base_url: ""
+
+  vxstream:
+
+    # True/False to enable parsing VxStream reports
+    enabled: False
+
+    # Base URL to access the VxStream reports
+    # Example: https://yourvxstream.local
+    base_url: ""
+
+  wildfire:
+
+    # True/False to enable parsing Wildfire reports
+    enabled: False
+
+
+slack:
+
+  # True/False to enable Slack notifications
+  enabled: False
+
+  # Webhook URL to use for notifications
+  slack_webhook_url: ""
+
+wiki:
+
+  # String to use for the Artifacts section
+  artifact_host: ""
+
+  # List of wildcard e-mail headers to ignore and remove from the Phish Headers section
+  ignore_headers:
+    - "X-MS-"
+    - "X-Microsoft-"
+    - "X-Exchange-"
+
+  # List of wildcard file names you want shown in the sandbox dropped files. Empty list defaults to all files.
+  dropped_file_names:
+    - ".7z"
+    - ".bat"
+    - ".cerber"
+    - ".cerber2"
+    - ".cmd"
+    - ".com"
+    - ".dll"
+    - ".exe"
+    - ".gif"
+    - ".html"
+    - ".ini"
+    - ".jar"
+    - ".jpeg"
+    - ".jpg"
+    - ".js"
+    - ".png"
+    - ".ps1"
+    - ".rar"
+    - ".txt"
+    - ".vbs"
+    - ".xtbl"
+    - ".zepto"
+    - ".zip"
+
+  # List of wildcard file types you want shown in the sandbox dropped files. Empty list defaults to all files.
+  dropped_file_types:
+    - "bitmap"
+    - "HTML"
+    - "Java"
+    - "PE32"
+
+  # Ignore these wiki page tags when adding to the indicator tags
+  ignore_these_tags:
+    - actionsonobjectives
+    - campaign
+    - event
+    - events
+    - exfil
+    - exploit
+    - exploitation
+    - incident
+    - incidents
+    - mitmb
+    - phishme
+
+  confluence:
+
+    # True/False to enable Confluence interaction
+    enabled: False
+
+    # URL to access the Confluence API
+    # Example: https://yourwiki.local/rest/api/content
+    confluence_api_url: ""
+
+    # Space name to use in your Confluence wiki
+    confluence_space_key: ""
+
+    # Confluence username to use for editing the event wiki pages
+    confluence_user: ""
+
+    # Password to use for your Confluence user
+    confluence_pass: ""
+
+modules:
+
+  detections:
+
+    cbinterface:
+      enabled: False
+
+      # List of companies to ignore from running the cbinterface searches
+      ignore_these_companies:
+        - ""
+
+      # List of computer names to ignore from the cbinterface searches
+      ignore_these_computers:
+        - ""
+
+      # List of usernames to ignore from the cbinterface searches
+      ignore_these_users:
+        - ""
+
+      # List of process names to ignore from the cbinterface searches
+      ignore_these_process_names:
+        - ""
+
+      # List of process MD5s to ignore from the cbinterface searches
+      ignore_these_process_md5s:
+        - ""
+
+    cburlclick:
+      enabled: False
+
+    clickers:
+      enabled: False
+
+      # Valid regex statement that matches what your employee IDs/usernames look like
+      employee_id_pattern: ""
+
+      # List of companies to ignore from running Splunk searches
+      ignore_these_companies:
+        - ""
+
+      # List of terms to exclude from Splunk searches
+      whitelisted_things:
+        - ""
+
+    darkcomet:
+      enabled: True
+
+    emotet:
+      enabled: True
+
+    execspoof:
+      enabled: False
+
+    formbook:
+      enabled: True
+
+    hancitor:
+      enabled: True
+
+    htmltext:
+      enabled: True
+
+      items:
+        # NOTE: The mode can be "any" or "all" to indicate which of the strings must match.
+
+        3 Apps:
+          mode: any
+          strings:
+            - "3 Apps"
+          tags:
+            - 3apps
+            - creds_harvesting
+
+        3 Apps File Locked:
+          mode: all
+          strings:
+            - "3 Apps"
+            - "File Locked"
+          tags:
+            - 3apps_filelocked
+            - creds_harvesting
+
+        Account Deactivation:
+          mode: any
+          strings:
+            - "Account De-activation"
+            - "Account Deactivation"
+          tags:
+            - deactivation_themed
+            - creds_harvesting
+
+        Account Verification:
+          mode: all
+          strings:
+            - "Account Verification"
+            - "<form"
+          tags:
+            - verification_themed
+            - creds_harvesting
+
+        Adobe:
+          mode: any
+          strings:
+            - "%3D%2220%25%22%3EAdobe%20PDF%20Online"
+            - "ADOBE DOCUMENT SECURITY SYSTEM"
+            - "Adobe Online Viewer"
+            - "Adobe PDF Document"
+            - "Adobe PDF Online"
+            - "Adobe Security Systems"
+            - "Adobe Systems Inc"
+            - "D.O.C READER"
+            - "I Agree with Adobe.inc terms and conditions"
+            - "PDF Reader"
+            - "Secured Adobe"
+          tags:
+            - adobe_themed
+            - creds_harvesting
+
+        chalbhai:
+          mode: any
+          strings:
+            - "chalbhai"
+          tags:
+            - chalbhai
+            - creds_harvesting
+
+        Countdown:
+          mode: any
+          strings:
+            - "document.write(unescape('%3c%74%69%74%6c%65%3e%45%6d%61%69%6c%20%53%65%74%74%69%6e%67%73%20%7c%20%56%65%72%69%66%69%63%61%74%69%6f%6e%3c%2f%74%69%74%6c%65%3e%0d%0a%0d%0a%3c%6c%69%6e"
+            - "document.write(unescape('%3Ctitle%3E%u7535%u5B50%u90AE%u4EF6%u8BBE%u7F6E%7C%20%u9A8C%u8BC1"
+          tags:
+            - countdown
+            - verification_themed
+            - creds_harvesting
+
+        DHL:
+          mode: any
+          strings:
+            - "DHL Now Partners with"
+            - "DHL WorldWide Delivery"
+          tags:
+            - dhl_themed
+            - creds_harvesting
+
+        Document Management System:
+          mode: any
+          strings:
+            - "DOCUMENT MANAGEMENT SYSTEM"
+          tags:
+            - document_management_system
+            - creds_harvesting
+
+        Docusign:
+          mode: any
+          strings:
+            - "<title>Docusign</title>"
+          tags:
+            - docusign_themed
+            - creds_harvesting
+
+        Dropbox:
+          mode: any
+          strings:
+            - "DropBox Buisness"
+            - "Dropbox Business"
+            - "Dropbox | Sign in"
+          tags:
+            - dropbox_themed
+            - creds_harvesting
+
+        Excel:
+          mode: any
+          strings:
+            - "Excel Online"
+            - "Excel |"
+          tags:
+            - excel_themed
+            - creds_harvesting
+
+        FileInvite:
+          mode: any
+          strings:
+            - "<title>FileInvite</title>"
+          tags:
+            - fileinvite_themed
+            - creds_harvesting
+
+        Google:
+          mode: any
+          strings:
+            - "google-header-bar"
+          tags:
+            - google_themed
+            - creds_harvesting
+
+        i0281:
+          mode: any
+          strings:
+            - "i0281"
+          tags:
+            - i0281
+            - creds_harvesting
+
+        LinkedIn:
+          mode: any
+          strings:
+            - "<title>LinkedIn"
+          tags:
+            - linkedin_themed
+            - creds_harvesting
+
+        Mailbox:
+          mode: any
+          strings:
+            - "<title>&#37038;&#20214;&#35774;&#32622;"
+            - "&#30830;&#35748;&#24744;&#30340;&#36134;&#25143;&#65292;&#36825;&#26679;&#20320;"
+            - "&#21487;&#20197;&#21319;&#32423;&#20320;&#30340;&#37038;&#31665;"
+            - "&#37038;&#20214;&#31649;&#29702;&#21592;"
+          tags:
+            - mailbox_themed
+            - creds_harvesting
+
+        nahalo:
+          mode: any
+          strings:
+            - "nahalo"
+          tags:
+            - nahalo
+            - creds_harvesting
+
+        O365:
+          mode: any
+          strings:
+            - "secure.aadcdn.microsoftonline-p.com"
+            - "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJ8AAAAjCAYAAACKE9juAAAACXBIWXMAAC4jAAAuIwF4pT92AAAKT2lDQ1BQaG90b3Nob3"
+            - "©2018 Microsoft"
+            - "©2019 Microsoft"
+          tags:
+            - o365_themed
+            - creds_harvesting
+
+        OneDrive:
+          mode: any
+          strings:
+            - "OneDrive online cloud"
+            - "One Drive Cloud"
+            - "<title>OneDrive</title>"
+          tags:
+            - onedrive_themed
+            - creds_harvesting
+
+        OX App Suite:
+          mode: all
+          strings:
+            - "App Suite"
+            - "Open-Xchange"
+            - "OX"
+          tags:
+            - ox_themed
+            - creds_harvesting
+
+        Outlook:
+          mode: any
+          strings:
+            - "Outlook Web App"
+          tags:
+            - outlook_themed
+            - creds_harvesting
+
+        PayPal:
+          mode: any
+          strings:
+            - "Paypal online"
+          tags:
+            - paypal_themed
+            - creds_harvesting
+
+        SharePoint:
+          mode: any
+          strings:
+            - "Microsoft SharePoint"
+            - "SharePoint</span>"
+            - "Sharepoint.pdf"
+            - "Sharepoint Cloud Document Sharing"
+          tags:
+            - sharepoint_themed
+            - creds_harvesting
+
+        SmartSheet:
+          mode: any
+          strings:
+            - "<title>Log In | Smartsheet</title>"
+          tags:
+            - smartsheet_themed
+            - creds_harvesting
+
+        Webmail App:
+          mode: any
+          strings:
+            - "Webmail App"
+            - "Webmail Security Systems"
+          tags:
+            - webmail_app_themed
+            - creds_harvesting
+
+        WeTransfer:
+          mode: any
+          strings:
+            - "WeTransfer is the simplest way"
+          tags:
+            - wetransfer_themed
+            - creds_harvesting
+
+    jrat:
+      enabled: True
+
+    keybase:
+      enabled: True
+
+    loda:
+      enabled: True
+
+    lokibot:
+      enabled: True
+
+    missedphish:
+      enabled: False
+
+      # Tool instance to use when creating the ACE alerts
+      ace_tool_instance: Event Sentry
+
+      # List of domains to ignore when looking for missed phish from these senders.
+      ignore_these_domains:
+        - ""
+
+      # List of companies to ignore from running the Splunk searches
+      ignore_these_companies:
+        - ""
+
+      # Phish alerts must be submitted to their appropriate ACE system.
+      # For example, if your ACE system supports multiple companies, you
+      # might have an ace-company1.local and ace-company2.local.
+      ace_instances:
+
+        # NOTE: Change "ace-company1" to match your ACE company.
+        ace-company1:
+
+          # URI for ACE alert submission
+          ace_submit: https://ace-company1.local:443/submit_alert
+
+
+        # NOTE: Change "ace-company2" to match your ACE company or delete
+        #       it if you only have a single ACE company.
+        ace-company2:
+
+          # URI for ACE alert submission
+          ace_submit: https://ace-company2.local:443/submit_alert
+
+    mitmb:
+      enabled: False
+
+      # List of domains to ignore from sender e-mail addresses
+      ignore_domains:
+        - 163.com
+        - 163.net
+        - 263.com
+        - 263.net
+        - aol.com
+        - comcast.net
+        - cox.net
+        - daum.net
+        - gmail.com
+        - gmx.us
+        - hanmail.net
+        - hotmail.com
+        - inbox.lv
+        - mail.ru
+        - microsoft.com
+        - outlook.com
+        - sapo.pt
+        - swissonline.ch
+        - t-online.de
+        - t-online.hu
+        - uol.com.br
+        - wetransfer.com
+        - yahoo.com
+        - zipmail.com.br
+        - zoho.com
+        - zoho.eu
+
+      # List of wiki page tags that, if present, will skip over this detection module
+      ignore_tags:
+        - ""
+
+    nanocore:
+      enabled: True
+
+    phishme:
+      enabled: True
+
+    pony:
+      enabled: False
+
+      # User-Agent to use for checking the favicon hashes.
+      user_agent: "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/27.0.1453.94 Safari/537.36"
+
+      # List of MD5 hashes for .bat files dropped by Pony
+      bat_hashes:
+        - 3880eeb1c736d853eb13b44898b718ab
+
+      # List of MD5 hashes for Pony favicon.ico admin panel images
+      favicon_hashes:
+        - b2e87bb6f28663fe5d28dec0d980d4cb
+
+    remcos:
+      enabled: True
+
+    urlimage:
+      enabled: False
+
+      # User-Agent to use for verifying image hashes
+      user_agent: "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/27.0.1453.94 Safari/537.36"
+
+      # List of image extensions you want to match in URLs
+      image_extensions:
+        - .gif
+        - .ico
+        - .jpg
+        - .png
+        - .svg
+
+      items:
+        # NOTE: The mode can be "any" or "all" to indicate which of the hashes must match.
+
+        Adobe:
+          mode: any
+          hashes:
+            - 4c69127bf23c89662eeb1bcc3e53427a
+            - 5bc888fac43317ad5ec8594be5564087
+            - 7c8806554edc6e4cc6f3935e535a8af4
+            - 9a6d195497cc64ab5e112c33f0730298
+            - 9adbce15c28900bb2a6d080dac35c76b
+            - 9bd5270d4e723e7995c9c959c5b87e05
+            - 24f56b9a323c92bf7a5428cbb6765eab
+            - 41c1abfbf787df7c1390dba511c2a4a9
+            - 416bf6d2943589fcb7aa0de8849f4e94
+            - 01547db5da340b633932c7cfdda2ebcd
+            - 2712a3d13c5c4c86da9e796b57d78509
+            - 4898f2d4486d9450d2dbe2a99f62f1ed
+            - a042e1b868daec21ebc58a287ef51886
+            - b0c837095e949bc4d0b7b510295c9640
+            - b0dc946290a4e0d6cff660502a1e29fc
+            - c6bfd9243604e8068c35d044585330b4
+            - c81c1d527a24c0df8f061bb682e4cc24
+            - c55248095ea02beff8abb9bdc9f04683
+            - d61c88fbc42e584e67a30c5d246020f4
+            - ecdd742cdf43aa5416780735469b4686
+          tags:
+            - adobe_themed
+            - creds_harvesting
+
+        American Express:
+          mode: any
+          hashes:
+            - 40d29656c4fecb76c3d676063ceb5009
+            - af141961d4b6beda0acc10235cea6f9a
+            - c5b438f5ee929ce7311e8094cbb5ba51
+            - f9b9ed073de246efaec673decc9f41ed
+          tags:
+            - american_express_themed
+            - creds_harvesting
+
+        BFA Bank:
+          mode: any
+          hashes:
+            - 7ef06222f7d7d6f424af2b1215a86998
+          tags:
+            - bfa_bank_themed
+            - creds_harvesting
+
+        Box:
+          mode: any
+          hashes:
+            - 2a913ca63e1456f6bcad7e5501ee2665
+          tags:
+            - box_themed
+            - creds_harvesting
+
+        Chase Bank:
+          mode: any
+          hashes:
+            - 5744986eb3dc6f2da92157a651889902
+          tags:
+            - chase_themed
+            - creds_harvesting
+
+        Chinese 163:
+          mode: any
+          hashes:
+            - 1ab4126038da0097c600df126829d63d
+            - 14e6d2662d173cc505b656461fba0061
+            - a1a9849426c7c4ab9d31040ba88f1544
+            - a14e5365cc2b27ec57e1ab7866c6a228
+            - c7f084cbf3f0944d205695da83b1a3cb
+          tags:
+            - 163_themed
+            - creds_harvesting
+
+        Citrix:
+          mode: any
+          hashes:
+            - e516cd2ac94ff089445e53e0ae8e369b
+          tags:
+            - citrix_themed
+            - creds_harvesting
+
+        cPanel:
+          mode: any
+          hashes:
+            - bc0c956653325b9e694d4dd1dfb78020
+          tags:
+            - cpanel_themed
+            - creds_harvesting
+
+        DHL:
+          mode: any
+          hashes:
+            - 2a128d19f7b99b16228f10294a9e82c0
+            - 02c3ea9d12971aa87a12161022447349
+            - 4e91ae03324b7ff68a50157ac705452f
+            - 5cc25d7f23ea274c7de115eefb356ff3
+            - 9c26f4919a06da407b599a871e63d6ff
+            - 60cbb60f2ebb87dda2c6b1026b1db26c
+            - 916b5b61328b49484c916cefcb84e0e0
+            - 20923b73933524784a3b398ee70b3825
+            - a6f1af8e79a11829ba9a66474b06bb97
+            - c202d39ed4525922514ffb2087afa583
+            - cdbd5fa6d81dab82dcc7ebd85bd1d94e
+            - f48cefb146f4307ae65cebefc350b194
+          tags:
+            - dhl_themed
+            - creds_harvesting
+
+        Digital Envelope:
+          mode: any
+          hashes:
+            - 5efc2b3dfffbd019548e9aede04ec1fe
+          tags:
+            - digital_envelope_themed
+            - creds_harvesting
+
+        Docusign:
+          mode: any
+          hashes:
+            - 3e47d71cae18960fcd9772c836da50fd
+            - 23a4076374756afcda7977b834ebc009
+            - 37ddfa3ec440a299274b88ffcc8ebcf0
+            - 71b489bdcf0e0b51db7bd75716ddf547
+            - 165ee5641d8721ac5dff7ba55256027f
+            - 0459ad27f51fb7ca4ba02299f8b261ac
+            - 1059986618539574ca4fa0bcfd699006
+            - de4a3814bdf9535bbf4735858725a7fa
+            - ea41e0591755fed52201fc3f96d6376e
+          tags:
+            - docusign_themed
+            - creds_harvesting
+
+        Dropbox:
+          mode: any
+          hashes:
+            - 51e2de798b41db26b6a0ec187959d394
+            - 0199b4ffa03cfeae45f21748b55bd62b
+            - 475aec3aca1dc0a084970cd99f437823
+            - 9391620020d44c78b0dc51abbcd151a0
+            - e1fb0f2282b9c6232ade1735c934f85d
+            - e97ca58472cab4bdc45f5e618bf749d2
+          tags:
+            - dropbox_themed
+            - creds_harvesting
+
+        eBay:
+          mode: any
+          hashes:
+            - 4a7f5f9d03a384e497e71f015c93cd3b
+            - 989d155fe0261a9d9938549a3c2f8168
+          tags:
+            - ebay_themed
+            - creds_harvesting
+
+        Excel:
+          mode: any
+          hashes:
+            - 4a1b5020244fe390f2e3acdf1c702510
+            - 38e0992f79ec900fd54256445761dd33
+            - 89e836223d5686ec9a78e11a0fea4a07
+            - 432bd428f8335f3b49d58b13e9b4b1fc
+            - 4292d595f45db8cc84bac8a325ae1afc
+            - 75099623c84266df9d4613b6caa88969
+            - da7d3afa81ca3f0769fb85f58e55b47c
+            - db13bce51b6066f4034831db7bd40cda
+            - f62b17a56880e4ecb5e119274a5ef0df
+          tags:
+            - excel_themed
+            - creds_harvesting
+
+        FedEx:
+          mode: any
+          hashes:
+            - 98b8a5c7b0759e3d2e35a81a949bf550
+            - a53129769d15f251d4e5c5cb966765b4
+          tags:
+            - fedex_themed
+            - creds_harvesting
+
+        FileInvite:
+          mode: any
+          hashes:
+            - 2e1703b8b06e99c78783af43972599ed
+            - 5598a4a4d8cd65340f17014d739c66de
+            - 7560d789bd9c9c12df41a241448ffac7
+            - a46a04f1f4245370a002bae0489bec3d
+            - e84677fe10a318a69b47aa20ab36acc5
+            - ec2d5aa8f9974ef9f63d83ce135e07d9
+          tags:
+            - fileinvite_themed
+            - creds_harvesting
+
+        Google:
+          mode: any
+          hashes:
+            - a300693728f5caa531a6886d9b8f38c2
+          tags:
+            - google_themed
+            - creds_harvesting
+
+        ING Direct:
+          mode: any
+          hashes:
+            - a2025d9c341a20513167370800eea233
+          tags:
+            - ing_direct_themed
+            - creds_harvesting
+
+        LinkedIn:
+          mode: any
+          hashes:
+            - 2f59e7d0e9372593256cab69a5be9021
+            - 3d0e5c05903cec0bc8e3fe0cda552745
+            - 6c11ad002b5b7cc40fc46797697013b0
+            - 27d6b003e66aaf25cdfe2c014f8d38f2
+            - 51d9a4347618132e0601c787e3cd352c
+            - 8365d733383f08343012dd7f35b18e1d
+            - a3d833de943bf82bf019ce42d48feb23
+            - ae7016937da765d2b150752f706104d4
+            - dba70ca79cb92dbb282ea261a7acc9b3
+          tags:
+            - linkedin_themed
+            - creds_harvesting
+
+        Mailbox:
+          mode: any
+          hashes:
+            - 1de90116079c8a94a54015c674c23c5e
+            - a17ed0bf5dac5685fa9ee56606c59d60
+          tags:
+            - mailbox_themed
+            - creds_harvesting
+
+        Microsoft:
+          mode: any
+          hashes:
+            - 3b91f8ad703764af28a70c081ed6db8f
+            - 8c40a4941adb34200cc0524b488722e0
+            - 73816c03e30841e18e1ae1a3157e69a1
+            - b7bc71823e01284eca21f9c08b7f8450
+            - bacd34ac19b7d708f5071f0c669dd497
+            - deb9fee33dfcefd47ef7c8386fb579e7
+          tags:
+            - microsoft_themed
+            - creds_harvesting
+
+        Mimecast:
+          mode: any
+          hashes:
+            - 9a380824b56e845c451da8c4678ff40d
+          tags:
+            - mimecast_themed
+            - creds_harvesting
+
+        O365:
+          mode: any
+          hashes:
+            - 0e3360bf7bef6e9539dca160dbf9c47b
+            - 2d0d8a4705f8fbb1e637a1cf2ae36598
+            - 5ec86907c1ac5ef3e117723998feb8be
+            - 12e3dac858061d088023b2bd48e2fa96
+            - 058e25c4aa0fccb6a280e543b4c108e8
+            - 95e1d221f4f2f485c900d7c69d5f8049
+            - 06850b58483b54bcb37240364d731a10
+            - 563829b27e0cdb44d229985a254c0672
+            - 910913f953ac7ec23a1746cf90d4e5ad
+            - dd62a417d7f26327110cfdcbd9c437ae
+            - e3fc9ea49517cccf805ad6f8431d3c6d
+          tags:
+            - o365_themed
+            - creds_harvesting
+
+        OneDrive:
+          mode: any
+          hashes:
+            - 4ff4a00712c3c5110885d4205d7e47d8
+            - 5cbd8c21cc6a5fd4d9258772d85e47f1
+            - 319f3042eef85577a6655af8152ff3a3
+            - 1195bfe885af7c60b352a3b3bef7e42c
+            - 33129cd161a3a0cab266de69756085b2
+            - 89994fbb5de49e8ab1914a6bdded89fa
+            - 157497df8c3834f392163252305ebca3
+            - 4729768ce8d7be4e64f4b8d661b4c19d
+            - a654376b61288b1bfdc9885b24fc259f
+            - b91f9c00577ad8e52b16404b4bdfdba4
+            - e12f88bdbe4a7b6ebb53d1fbac780909
+            - f9520ee21a2c1512894588df62a77fab
+            - ffc68ae7fd5a2d7a7cec7185717b6e88
+          tags:
+            - onedrive_themed
+            - creds_harvesting
+
+        Outlook:
+          mode: any
+          hashes:
+            - 64ce2c1ccf2e8cfa5b46dbd31ebd24c0
+            - e5c0f2cfdf453501ce25a05a8de26c5d
+          tags:
+            - outlook_themed
+            - creds_harvesting
+
+        PayPal:
+          mode: any
+          hashes:
+            - 7fcb8b2360db3cfe650fc067b386984c
+            - f955856d3ff447b9ac3191e37906485f
+          tags:
+            - paypal_themed
+            - creds_harvesting
+
+        PDF:
+          mode: any
+          hashes:
+            - 7124f622300cc528bf2f8e5238ec72fb
+            - eaaebef8934b3e70d5b219353c376f98
+          tags:
+            - pdf_themed
+            - creds_harvesting
+
+        Pretty Envelope:
+          mode: any
+          hashes:
+            - c5d76fe02e00a83f31f7d53f20ed5a90
+          tags:
+            - pretty_envelope
+            - creds_harvesting
+
+        Roundcube:
+          mode: any
+          hashes:
+            - ef9c0362bf20a086bb7c2e8ea346b9f0
+          tags:
+            - roundcube_themed
+            - creds_harvesting
+
+        Secure Cloud:
+          mode: any
+          hashes:
+            - 411fb43dcdc5fbd1f3245303607fffb2
+            - c7117da1fc4dd373b09c33798d291022
+            - eecd7ceaf2534a23f4abd599b142aba2
+          tags:
+            - secure_cloud_themed
+            - creds_harvesting
+
+        SF Express:
+          mode: any
+          hashes:
+            - b839f01567bcf1b9d1a087fba99fd3d1
+          tags:
+            - sf_express_themed
+            - creds_harvesting
+
+        ShareFile:
+          mode: any
+          hashes:
+            - 7d7f5f935fcef297537412da08e245c2
+            - c6c9ee2be2033ebff6df361e30765dbd
+          tags:
+            - sharefile_themed
+            - creds_harvesting
+
+        SharePoint:
+          mode: any
+          hashes:
+            - 50996da127314e31e0b14d57b9847c9f
+            - fe563e248e075f7698d3d9c619bf0d23
+          tags:
+            - sharepoint_themed
+            - creds_harvesting
+
+        SmartSheet:
+          mode: any
+          hashes:
+            - 394d4d0163254b8b4d398b264449e933
+            - a1e74b1365360ed95b7ce68c872c22d9
+          tags:
+            - smartsheet_themed
+            - creds_harvesting
+
+        Standard Bank:
+          mode: any
+          hashes:
+            - 57fa24bf8aa987f75d34d08edeeee583
+            - 371b3bb471b3ba0bd233f2eaf66e9b2e
+            - bd179cf6245369537528ae8c43f740df
+          tags:
+            - standard_bank_themed
+            - creds_harvesting
+
+        Squarespace:
+          mode: any
+          hashes:
+            - cb8ee9c5453e5df92787807de21ba0b9
+          tags:
+            - squarespace_themed
+            - creds_harvesting
+
+        TD Bank:
+          mode: any
+          hashes:
+            - a0d0bc9d1974370aecca9952d49ca3d0
+            - f5b6840232a6dfcd1d47d429ecabfdef
+          tags:
+            - td_bank_themed
+            - creds_harvesting
+
+        US Bank:
+          mode: any
+          hashes:
+            - 08a2f5ddb00db2007a07c3ec4ae00d17
+            - c7c2c506695a62b83f16e51c2035f29b
+          tags:
+            - us_bank_themed
+            - creds_harvesting
+
+        Verification:
+          mode: any
+          hashes:
+            - 0dc9d2891604d235b8765ec72e4b7b4e
+            - a1bf7d78d247de46f8aa6e0233d70eab
+            - e4268a59c74eb1562b8adad48b962bb9
+          tags:
+            - verification_themed
+            - countdown
+            - creds_harvesting
+
+        Voicemail:
+          mode: any
+          hashes:
+            - cccb8af52434193ff5470cd37e6cf1b0
+          tags:
+            - voicemail_themed
+            - creds_harvesting
+
+        Wells Fargo:
+          mode: any
+          hashes:
+            - 9ff36e89d4ea81b10ab5cc089aceb686
+            - 24e461019c9c8e9701d55f8408cde993
+            - 480f6d97eac7e02703bae91b95f40b9d
+            - 0292112ee8a3c512008da6eabd2bb8bf
+            - aba46463834630d340ec91f221d1c202
+            - b9a7bf2df2acb12a5dfad9bf276c604a
+          tags:
+            - wellsfargo_themed
+            - creds_harvesting
+
+        WeTransfer:
+          mode: any
+          hashes:
+            - 692e1c7339c359b6412f059c9c9a0474
+            - 7fca8475d8507251dfba856eadcd1bad
+          tags:
+            - wetransfer_themed
+            - creds_harvesting
+
+        Yahoo:
+          mode: any
+          hashes:
+            - 9796ed786d95606d51be9dab54fb5350
+          tags:
+            - yahoo_themed
+            - creds_harvesting
+
+    ursnif:
+      enabled: True
+
+  indicators:
+
+    arpadomains:
+      enabled: True
+
+    badaceurls:
+      enabled: True
+
+    credsharvesting:
+      enabled: True
+
+    dropboxurls:
+      enabled: True
+
+    emotet:
+      enabled: True
+
+    jrat:
+      enabled: True
+
+    mitmb:
+      enabled: True
+
+    nanocore:
+      enabled: True
+
+    ransomware:
+      enabled: True
+
+    shorturi:
+      enabled: True
+
+    urlshortener:
+      enabled: True
+
+      # List of URL shortener domains
+      domains:
+        - 0rz.tw
+        - 1-url.net
+        - 126.am
+        - 1tk.us
+        - 1un.fr
+        - 1url.com
+        - 1url.cz
+        - 1wb2.net
+        - 2.gp
+        - 2.ht
+        - 2ad.in
+        - 2doc.net
+        - 2fear.com
+        - 2tu.us
+        - 2ty.in
+        - 2u.xf.cz
+        - 3ra.be
+        - 3x.si
+        - 4i.ae
+        - 4view.me
+        - 5em.cz
+        - 5url.net
+        - 5z8.info
+        - 6fr.ru
+        - 6g6.eu
+        - 7.ly
+        - 76.gd
+        - 77.ai
+        - 7fth.cc
+        - 7li.in
+        - 7vd.cn
+        - 8u.cz
+        - 944.la
+        - 98.to
+        - a0.fr
+        - abbr.sk
+        - ad-med.cz
+        - ad5.eu
+        - ad7.biz
+        - adb.ug
+        - adf.ly
+        - adfa.st
+        - adfly.fr
+        - adli.pw
+        - adv.li
+        - ajn.me
+        - aka.gr
+        - alil.in
+        - any.gs
+        - aqva.pl
+        - ares.tl
+        - asso.in
+        - au.ms
+        - ayt.fr
+        - azali.fr
+        - b00.fr
+        - b23.ru
+        - b54.in
+        - baid.us
+        - bc.vc
+        - bee4.biz
+        - bim.im
+        - bit.do
+        - bit.ly
+        - bitw.in
+        - blap.net
+        - ble.pl
+        - blip.tv
+        - boi.re
+        - bote.me
+        - bougn.at
+        - br4.in
+        - brk.to
+        - brzu.net
+        - bul.lu
+        - bxl.me
+        - bzh.me
+        - cachor.ro
+        - captur.in
+        - cbs.so
+        - cbug.cc
+        - cc.cc
+        - ccj.im
+        - cf.ly
+        - cf2.me
+        - cf6.co
+        - cjb.net
+        - cli.gs
+        - clikk.in
+        - cn86.org
+        - couic.fr
+        - cr.tl
+        - cudder.it
+        - cur.lv
+        - curl.im
+        - cut.pe
+        - cut.sk
+        - cutt.eu
+        - cutt.us
+        - cutu.me
+        - cybr.fr
+        - cyonix.to
+        - d75.eu
+        - daa.pl
+        - dai.ly
+        - dd.ma
+        - ddp.net
+        - dft.ba
+        - doiop.com
+        - dolp.cc
+        - dopice.sk
+        - droid.ws
+        - dv.gd
+        - dyo.gs
+        - e37.eu
+        - ecra.se
+        - ely.re
+        - erax.cz
+        - erw.cz
+        - ex9.co
+        - ezurl.cc
+        - fff.re
+        - fff.to
+        - fff.wf
+        - filz.fr
+        - fnk.es
+        - foe.hn
+        - folu.me
+        - freze.it
+        - fur.ly
+        - g00.me
+        - gg.gg
+        - goo.gl
+        - goo.lu
+        - grem.io
+        - guiama.is
+        - hadej.co
+        - hide.my
+        - hjkl.fr
+        - hops.me
+        - href.li
+        - ht.ly
+        - i-2.co
+        - i99.cz
+        - icit.fr
+        - ick.li
+        - icks.ro
+        - iiiii.in
+        - iky.fr
+        - ilix.in
+        - info.ms
+        - is.gd
+        - isra.li
+        - itm.im
+        - ity.im
+        - ix.sk
+        - j.gs
+        - j.mp
+        - jdem.cz
+        - jieb.be
+        - jp22.net
+        - jqw.de
+        - kask.us
+        - kfd.pl
+        - korta.nu
+        - kr3w.de
+        - krat.si
+        - kratsi.cz
+        - krod.cz
+        - kuc.cz
+        - kxb.me
+        - l-k.be
+        - l9.fr
+        - lc-s.co
+        - lc.cx
+        - lcut.in
+        - libero.it
+        - lick.my
+        - lien.li
+        - lien.pl
+        - lin.io
+        - linkn.co
+        - llu.ch
+        - lnk.co
+        - lnk.ly
+        - lnk.sk
+        - lnks.fr
+        - lnky.fr
+        - lnp.sn
+        - lp25.fr
+        - lvvk.com
+        - m1p.fr
+        - m3mi.com
+        - make.my
+        - mcaf.ee
+        - mdl29.net
+        - mic.fr
+        - migre.me
+        - minu.me
+        - more.sh
+        - mut.lu
+        - myurl.in
+        - net.ms
+        - net46.net
+        - nicou.ch
+        - nig.gr
+        - nov.io
+        - nq.st
+        - nxy.in
+        - o-x.fr
+        - okok.fr
+        - ou.af
+        - ou.gd
+        - oua.be
+        - ow.ly
+        - p.pw
+        - parky.tv
+        - past.is
+        - pdh.co
+        - ph.ly
+        - pich.in
+        - pin.st
+        - plots.fr
+        - pm.wu.cz
+        - po.st
+        - ppfr.it
+        - ppst.me
+        - ppt.cc
+        - ppt.li
+        - prejit.cz
+        - ptab.it
+        - ptm.ro
+        - pw2.ro
+        - py6.ru
+        - q.gs
+        - qbn.ru
+        - qqc.co
+        - qr.net
+        - qrtag.fr
+        - qxp.cz
+        - qxp.sk
+        - rb6.co
+        - rcknr.io
+        - rdz.me
+        - redir.ec
+        - redir.fr
+        - redu.it
+        - ref.so
+        - reise.lc
+        - relink.fr
+        - ri.ms
+        - riz.cz
+        - rod.gs
+        - roflc.at
+        - rrd.me
+        - rt.se
+        - s-url.fr
+        - safe.mn
+        - sagyap.tk
+        - sdu.sk
+        - seeme.at
+        - segue.se
+        - sh.st
+        - shar.as
+        - short.cc
+        - short.ie
+        - short.pk
+        - shrt.in
+        - shy.si
+        - sicax.net
+        - sina.lt
+        - sk.gy
+        - skr.sk
+        - skroc.pl
+        - smll.co
+        - sn.im
+        - snsw.us
+        - soo.gd
+        - spn.sr
+        - sq6.ru
+        - ssl.gs
+        - su.pr
+        - surl.me
+        - sux.cz
+        - sy.pe
+        - t.cn
+        - t.co
+        - ta.gd
+        - tabzi.com
+        - tau.pe
+        - tdjt.cz
+        - thesa.us
+        - tin.li
+        - tini.cc
+        - tiny.cc
+        - tiny.lt
+        - tiny.ms
+        - tiny.pl
+        - tinyurl.com
+        - tinyurl.hu
+        - tixsu.com
+        - tldr.sk
+        - tllg.net
+        - tnij.org
+        - tny.cz
+        - to.ly
+        - to8.cc
+        - tohle.de
+        - tpmr.com
+        - tr.im
+        - tr5.in
+        - trck.me
+        - trick.ly
+        - trkr.ws
+        - trunc.it
+        - twet.fr
+        - twi.im
+        - twlr.me
+        - twurl.nl
+        - u.to
+        - uby.es
+        - ucam.me
+        - ug.cz
+        - ulmt.in
+        - unlc.us
+        - upzat.com
+        - ur1.ca
+        - url2.fr
+        - url5.org
+        - urlin.it
+        - urls.fr
+        - urlz.fr
+        - urub.us
+        - utfg.sk
+        - v.gd
+        - v.ht
+        - v5.gd
+        - vaaa.fr
+        - valv.im
+        - vaza.me
+        - vbly.us
+        - vd55.com
+        - verd.in
+        - vgn.me
+        - vov.li
+        - vsll.eu
+        - vt802.us
+        - vur.me
+        - vv.vg
+        - w1p.fr
+        - waa.ai
+        - wb1.eu
+        - web99.eu
+        - wed.li
+        - wideo.fr
+        - wp.me
+        - wtc.la
+        - wu.cz
+        - ww7.fr
+        - wwy.me
+        - x.co
+        - x.nu
+        - x10.mx
+        - x2c.eu
+        - xav.cc
+        - xgd.in
+        - xib.me
+        - xl8.eu
+        - xoe.cz
+        - xrl.us
+        - xt3.me
+        - xua.me
+        - xub.me
+        - xurls.co
+        - yagoa.fr
+        - yagoa.me
+        - yau.sh
+        - yeca.eu
+        - yect.com
+        - yep.it
+        - yogh.me
+        - yon.ir
+        - youfap.me
+        - ysear.ch
+        - yyv.co
+        - z9.fr
+        - zapit.nu
+        - zeek.ir
+        - zip.net
+        - zkr.cz
+        - zkrat.me
+        - zkrt.cz
+        - zoodl.com
+        - zpag.es
+        - zsms.net
+        - zti.me
+        - zxq.net
+        - zyva.org
+        - zzb.bz
+
+    urltrailingslash:
+      enabled: True
+
+    wetransferurls:
+      enabled: True
+
+    wordpressurls:
+      enabled: True
