@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+    python:
+        build:
+            context: ./services/python
+        networks:
+            - esnet
+        restart: always
+        stop_grace_period: 5m
+        volumes:
+            - /data/shared/events:/data/shared/events
+            - ./services/python/app/conf/local:/eventsentry/conf/local
+            - /usr/local/share/ca-certificates/integral-ca.pem:/certificate
+
+networks:
+    esnet:
+        driver: bridge
