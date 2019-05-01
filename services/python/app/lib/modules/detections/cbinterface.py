@@ -2,6 +2,7 @@ import datetime
 import dateutil.parser
 import dateutil.tz
 import logging
+import pytz
 import re
 import subprocess
 
@@ -66,7 +67,11 @@ class Module(DetectionModule):
             # cbinterface needs Eastern Time for the queries, so convert it.
             tzstr = dateutil.tz.tzstr('EST5EDT')
             event_time_obj = dateutil.parser.parse(event_time, ignoretz=False)
-            est_string = str(event_time_obj.astimezone(tzstr))[0:19]
+            try:
+                est_string = str(event_time_obj.astimezone(tzstr))[0:19]
+            except ValueError:
+                now_aware = event_time_obj.replace(tzinfo=pytz.UTC)
+                est_string = str(now_aware.astimezone(tzstr))[0:19]
 
             # Run the cbinterface commands for each company in the event.
             for company in company_names:
