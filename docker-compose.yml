@@ -4,6 +4,9 @@ services:
     python:
         build:
             context: ./services/python
+            args:
+                - http_proxy
+                - https_proxy
         networks:
             - esnet
         restart: always

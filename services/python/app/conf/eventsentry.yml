@@ -12,6 +12,7 @@ core:
 
   # List of path strings to skip when walking the event directory
   skip_paths:
+    - ".crits"
     - ".ace"
     - ".dmp"
     - ".pcap"

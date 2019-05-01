@@ -1,7 +1,7 @@
 FROM ubuntu:18.04
 
-#ENV http_proxy http://user:password@host:port
-#ENV https_proxy http://user:password@host:port
+ARG http_proxy
+ARG https_proxy
 
 WORKDIR /eventsentry/
 
