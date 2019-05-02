@@ -1,4 +1,5 @@
 from lib.modules.BaseModule import *
+import logging
 
 class DetectionModule(BaseModule):
     def __init__(self, name='', event_json={}):
@@ -7,5 +8,7 @@ class DetectionModule(BaseModule):
 
         self.tags = []
         self.detections = []
+        self.old_detections = event_json['detections']
         self.extra = []
+        self.old_extra = event_json['detections_extra']
 

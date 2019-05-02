@@ -144,26 +144,29 @@ class Module(DetectionModule):
                     # Make sure there isn't already an email in the event that matches this message-id.
                     # This can happen if the phish is an embedded/attached email and we are alerting on the
                     # "parent" email's message-id as being a missed phish.
+                    # 
+                    # Also check that the message-id isn't in the previous detections, which means that an
+                    # ACE alert was already created for it.
                     message_id = phish[0]
                     subject = phish[1]
                     if not any(message_id in path for path in file_paths):
 
-                        self.logger.warning('Creating alert for potentially missed phish: {}'.format(message_id))
-                        
-                        alert = Alert(
-                            tool = 'Event Sentry',
-                            tool_instance = self.config['ace_tool_instance'],
-                            alert_type = 'eventsentry',
-                            desc = 'Event Sentry - Possible Missed Phish: {}'.format(subject),
-                            event_time = datetime.datetime.now(),
-                            details = {'event_name': self.event_json['name'], 'wiki_url': self.event_json['wiki_url']})
-                        alert.add_observable('message_id', message_id)
-
                         self.detections.append('! DETECTED POSSIBLE MISSED PHISH: {} <--- CHECK ACE FOR THE ALERT'.format(message_id))
                         
-                        # Submit the alert to the proper ACE system (based on the company).
-                        try:
-                            ace_submit = self.config['ace_instances'][company.lower()]['ace_submit']
-                            alert.submit(ace_submit, 'eventsentry')
-                        except:
-                            self.logger.exception('Error submitting missed phish alert to ACE.')
+                        if not any(message_id in detection for detection in self.old_detections):
+                            self.logger.warning('Creating alert for potentially missed phish: {}'.format(message_id))
+                            alert = Alert(
+                                tool = 'Event Sentry',
+                                tool_instance = self.config['ace_tool_instance'],
+                                alert_type = 'eventsentry',
+                                desc = 'Event Sentry - Possible Missed Phish: {}'.format(subject),
+                                event_time = datetime.datetime.now(),
+                                details = {'event_name': self.event_json['name'], 'wiki_url': self.event_json['wiki_url']})
+                            alert.add_observable('message_id', message_id)
+
+                            # Submit the alert to the proper ACE system (based on the company).
+                            try:
+                                ace_submit = self.config['ace_instances'][company.lower()]['ace_submit']
+                                alert.submit(ace_submit, 'eventsentry')
+                            except:
+                                self.logger.exception('Error submitting missed phish alert to ACE.')
