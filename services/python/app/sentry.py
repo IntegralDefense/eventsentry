@@ -641,6 +641,7 @@ def process_event(event, sip_campaign_names):
 
                 try:
                     data = {'references': [{'source': source, 'reference': wiki.get_page_url()}],
+                            'status': i['status'],
                             'tags': tags,
                             'type': i['type'],
                             'username': 'eventsentry',
