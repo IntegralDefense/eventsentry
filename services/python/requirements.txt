@@ -4,7 +4,6 @@ bs4
 cbinterface
 configparser
 critsapi
-critswhitelist
 flockcontext
 lxml
 pymongo
@@ -13,6 +12,7 @@ python-dateutil
 python-magic
 pytz
 requests
+sipwhitelist
 tld
 tzlocal
 urlfinderlib

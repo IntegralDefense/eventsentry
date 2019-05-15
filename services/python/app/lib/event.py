@@ -94,8 +94,13 @@ class Event():
         else:
             self.crits_path = False
 
+        """
         # Save the CRITS Mongo connection.
         self.mongo_connection = mongo_connection
+        """
+
+        # Save the SIP connection.
+        self.sip = sip
 
         # Load the event JSON. If it does not exist, a default copy will be used.
         self.json_path = os.path.join(self.path, 'event.json')
@@ -196,8 +201,13 @@ class Event():
                 if not f['critical']:
                     f['md5'] = self.calculate_md5(f['path'])
 
+            """
             # Get the latest whitelist from CRITS.
             whitelist = EventWhitelist(mongo_connection=self.mongo_connection)
+            """
+
+            # Get the latest whitelist from SIP.
+            whitelist = EventWhitelist(sip=self.sip)
 
             # Parse the ACE alerts.
             ace_alerts = self.parse_ace_alerts()
