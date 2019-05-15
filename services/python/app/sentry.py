@@ -185,7 +185,7 @@ def process_event(event, sip_campaign_names):
                 break
 
         """
-        ADD ANY WHITELISTED INDICATORS FROM THE SUMMARY TABLE TO CRITs
+        ADD ANY WHITELISTED INDICATORS FROM THE SUMMARY TABLE TO CRITS AND SIP
         """
 
         # Read the Indicator Summary table to see if there are any checked (whitelisted) indicators.
@@ -292,7 +292,7 @@ def process_event(event, sip_campaign_names):
                         try:
                             data = {'references': [{'source': event_source, 'reference': wiki.get_page_url()}],
                                     'status': 'Deprecated',
-                                    'tags': ['whitelist:es'],
+                                    'tags': ['whitelist:e2w'],
                                     'type': i['type'],
                                     'username': 'eventsentry',
                                     'value': i['value']}
@@ -460,6 +460,7 @@ def process_event(event, sip_campaign_names):
         ADD CRITs STATUS OF EACH INDICATOR TO THE EVENT JSON
         """
 
+        """
         if crits_api and mongo_connection:
 
             # Used as a cache so we don't query CRITs for the same indicator.
@@ -483,12 +484,12 @@ def process_event(event, sip_campaign_names):
                 # We've already queried CRITs for this type/value, so just set the status.
                 else:
                     i['status'] = queried_indicators[type_value]
+        """
 
         """
         ADD SIP STATUS OF EACH INDICATOR TO THE EVENT JSON
         """
 
-        """
         if sip:
 
             # Used as a cache so we don't query SIP for the same indicator.
@@ -514,7 +515,6 @@ def process_event(event, sip_campaign_names):
                 # We've already queried SIP for this type/value, so just set the status.
                 else:
                     i['status'] = queried_indicators[type_value]
-        """
 
         """
         RUN ALL OF THE CLEAN INDICATOR MODULES
