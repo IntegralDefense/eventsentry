@@ -402,7 +402,7 @@ def process_event(event, sip_campaign_names):
                 if not [i for i in manual_indicators if i['type'] == old_indicator['type'] and i['value'] == old_indicator['value']]:
                     try:
                         # Find the indicator's SIP ID and disable it.
-                        result = sip.get('indicators?type={}&value={}'.format(old_indicator['type'], old_indicator['value']))
+                        result = sip.get('indicators?type={}&exact_value={}'.format(old_indicator['type'], old_indicator['value']))
                         if result['items']:
                             id_ = result['items'][0]['id']
 
@@ -506,7 +506,7 @@ def process_event(event, sip_campaign_names):
 
                     # Get the indicator status from SIP. Ignore any indicators that were already set to Informational.
                     if not i['status'] == 'Informational':
-                        result = sip.get('indicators?type={}&value={}'.format(i['type'], i['value']))
+                        result = sip.get('indicators?type={}&exact_value={}'.format(i['type'], i['value']))
                         if result['items']:
                             i['status'] = result['items'][0]['status']
 
