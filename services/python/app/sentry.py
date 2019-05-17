@@ -292,6 +292,8 @@ def process_event(event, sip_campaign_names):
                         try:
                             data = {'references': [{'source': event_source, 'reference': wiki.get_page_url()}],
                                     'status': 'Deprecated',
+                                    'confidence': 'low',
+                                    'impact': 'low',
                                     'tags': ['whitelist:e2w'],
                                     'type': i['type'],
                                     'username': 'eventsentry',
@@ -380,6 +382,8 @@ def process_event(event, sip_campaign_names):
 
                     # Perform the API call to add the indicator.
                     data = {'references': [{'source': event_source, 'reference': wiki.get_page_url()}],
+                            'confidence': 'low',
+                            'impact': 'low',
                             'tags': i['tags'],
                             'type': i['type'],
                             'username': 'eventsentry',
@@ -642,6 +646,8 @@ def process_event(event, sip_campaign_names):
                 try:
                     data = {'references': [{'source': source, 'reference': wiki.get_page_url()}],
                             'status': i['status'],
+                            'confidence': 'low',
+                            'impact': 'low',
                             'tags': tags,
                             'type': i['type'],
                             'username': 'eventsentry',
