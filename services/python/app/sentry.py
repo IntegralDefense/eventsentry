@@ -391,7 +391,19 @@ def process_event(event, sip_campaign_names):
                     result = sip.post('indicators', data)
                     logging.warning('Added "{}" manual indicator "{}" to SIP: {}'.format(i['type'], i['value'], result['id']))
                 except ConflictError:
-                    pass
+                    # Since the indicator already exists, try to update it to make sure that it
+                    # has all of the latest wiki page tags. Start by getting the existing indicator.
+                    result = sip.get('/indicators?type={}&value={}'.format(i['type'], i['value']))
+                    if result['items']:
+                        try:
+                            data = {'tags': i['tags']}
+                            update_result = sip.put('/indicators/{}'.format(result['items'][0]['id']), data)
+                        except ConflictError:
+                            pass
+                        except:
+                            logging.exception('Error updating tags on manual indicator: {}'.format(result['items'][0]['id']))
+                              
+                        
                 except:
                     logging.exception('Error adding "{}" manual indicator "{}" to SIP'.format(i['type'], i['value']))
 
