@@ -25,18 +25,20 @@ class Module(DetectionModule):
 
         # Loop over the unique URLs to download and hash any images.
         for url in set([i['value'] for i in self.event_json['indicators'] if i['type'] == 'URI - URL']):
-            if any(ext.lower() in url.lower() for ext in image_extensions):
-                try:
-                    temp = tempfile.NamedTemporaryFile()
-                    command = '{} wget -O {} -U {} -T {} -t {} {}'.format(PROXYCHAINS, temp.name, shlex.quote(user_agent), 5, 1, shlex.quote(url))
-                    subprocess.call(command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                    with open(temp.name, 'rb') as image:
-                        m = hashlib.md5()
-                        m.update(image.read())
-                        md5 = m.hexdigest().lower()
-                        image_hashes[md5] = url
-                except:
-                    self.logger.exception('Error downloading image: {}'.format(url))
+            # Stupid hack for WeTransfer emails that have hundreds of images.
+            if not 'wetransfer.net' in url and not 'wetransfer.com' in url:
+                if any(ext.lower() in url.lower() for ext in image_extensions):
+                    try:
+                        temp = tempfile.NamedTemporaryFile()
+                        command = '{} wget -O {} -U {} -T {} -t {} {}'.format(PROXYCHAINS, temp.name, shlex.quote(user_agent), 5, 1, shlex.quote(url))
+                        subprocess.call(command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        with open(temp.name, 'rb') as image:
+                            m = hashlib.md5()
+                            m.update(image.read())
+                            md5 = m.hexdigest().lower()
+                            image_hashes[md5] = url
+                    except:
+                        self.logger.exception('Error downloading image: {}'.format(url))
 
         # Loop over each item in the config file.
         for item in self.config['items']:
