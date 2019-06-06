@@ -516,6 +516,10 @@ def process_event(event, sip_campaign_names):
             logging.debug('Querying SIP for indicator statuses.')
 
             for i in e.json['indicators']:
+                # Skip this indicator if it is whitelisted.
+                if i['status'] == 'Whitelisted' or i['whitelisted']:
+                    continue
+
                 type_value = '{}{}'.format(i['type'], i['value'])
 
                 # Continue if we haven't already processed this type/value pair indicator.
