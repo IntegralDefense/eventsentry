@@ -35,8 +35,11 @@ class Module(DetectionModule):
         elif self.event_json['ace_alerts']:
             start_time = self.event_json['ace_alerts'][0]['time']
 
-        # We need to make sure the start time is in the format "YYYY-MM-DD HH:MM:SS", which is 19 characters long.
-        start_time = start_time[0:19]
+        # We need to make sure the start time is in the format "YYYY-MM-DD", which is 10 characters long.
+        start_time = start_time[0:10]
+
+        # Force the start time to begin at 00:00:00.
+        start_time = '{} 00:00:00'.format(start_time)
 
         # These are legit things that we expect to generate some results.
         whitelisted_things = self.config['whitelisted_things']

@@ -71,7 +71,8 @@ class Module(DetectionModule):
                 est_string = str(event_time_obj.astimezone(tzstr))[0:19]
             except ValueError:
                 now_aware = event_time_obj.replace(tzinfo=pytz.UTC)
-                est_string = str(now_aware.astimezone(tzstr))[0:19]
+                est_string = str(now_aware.astimezone(tzstr))[0:10]
+                est_string = '{} 00:00:00'.format(est_string)
 
             # Run the cbinterface commands for each company in the event.
             for company in company_names:
@@ -80,7 +81,7 @@ class Module(DetectionModule):
                 for filename in filenames:
 
                     # Build and run the cbinterface command.
-                    command = 'cbinterface -e {} query --no-warnings \'{} {} {} {} filemod:"{}" OR cmdline:"{}"\' -s \'{}\''.format(company, ignore_these_process_names_string, ignore_these_process_md5s_string, ignore_these_computers_string, ignore_these_users_string, filename, filename, est_string)
+                    command = 'cbinterface -e {} query --no-warnings \'{} {} {} {} (filemod:"{}" OR cmdline:"{}")\' -s \'{}\''.format(company, ignore_these_process_names_string, ignore_these_process_md5s_string, ignore_these_computers_string, ignore_these_users_string, filename, filename, est_string)
                     try:
                         output = subprocess.check_output(command, shell=True).decode('utf-8')
 
