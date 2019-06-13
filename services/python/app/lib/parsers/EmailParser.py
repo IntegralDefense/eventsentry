@@ -441,9 +441,20 @@ class EmailParser():
             if attachment and attachment['md5']:
                 attachments.append(attachment)
             elif part.get_content_type() == 'text/plain':
-                body += part.get_payload(decode=True).decode(charset, errors='ignore')
+                try:
+                    body += part.get_payload(decode=True).decode(charset, errors='ignore')
+                except LookupError:
+                    if 'windows-' in charset:
+                        charset = charset.replace('windows-', 'cp')
+                        body += part.get_payload(decode=True).decode(charset, errors='ignore')
+                        
             elif part.get_content_type() == 'text/html':
-                html += part.get_payload(decode=True).decode(charset, errors='ignore')
+                try:
+                    html += part.get_payload(decode=True).decode(charset, errors='ignore')
+                except LookupError:
+                    if 'windows-' in charset:
+                        charset = charset.replace('windows-', 'cp')
+                        html += part.get_payload(decode=True).decode(charset, errors='ignore')
         return {
             'body' : body,
             'html' : html,
