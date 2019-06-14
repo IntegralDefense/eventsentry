@@ -395,14 +395,15 @@ def process_event(event, sip_campaign_names):
                     # Since the indicator already exists, try to update it to make sure that it
                     # has all of the latest wiki page tags. Start by getting the existing indicator.
                     result = sip.get('/indicators?type={}&value={}'.format(i['type'], urllib.parse.quote(i['value'])))
-                    if result['items']:
+                    if result:
                         try:
+                            id_ = result[0]['id']
                             data = {'tags': i['tags']}
-                            update_result = sip.put('/indicators/{}'.format(result['items'][0]['id']), data)
+                            update_result = sip.put('/indicators/{}'.format(id_, data))
                         except ConflictError:
                             pass
                         except:
-                            logging.exception('Error updating tags on manual indicator: {}'.format(result['items'][0]['id']))
+                            logging.exception('Error updating tags on manual indicator: {}'.format(id_))
                               
                         
                 except:
@@ -420,9 +421,8 @@ def process_event(event, sip_campaign_names):
                     try:
                         # Find the indicator's SIP ID and disable it.
                         result = sip.get('indicators?type={}&exact_value={}'.format(old_indicator['type'], urllib.parse.quote(old_indicator['value'])))
-                        if result['items']:
-                            id_ = result['items'][0]['id']
-
+                        if result:
+                            id_ = result[0]['id']
                             data = {'status': 'Informational'}
                             result = sip.put('indicators/{}'.format(id_), data)
 
@@ -528,8 +528,10 @@ def process_event(event, sip_campaign_names):
                     # Get the indicator status from SIP. Ignore any indicators that were already set to Informational.
                     if not i['status'] == 'Informational':
                         result = sip.get('indicators?type={}&exact_value={}'.format(i['type'], urllib.parse.quote(i['value'])))
-                        if result['items']:
-                            i['status'] = result['items'][0]['status']
+                        if result:
+                            id_ = result[0]['id']
+                            result = sip.get('indicators/{}'.format(id_))
+                            i['status'] = result['status']
 
                     # Add the indicator to the queried cache.
                     queried_indicators[type_value] = i['status']
