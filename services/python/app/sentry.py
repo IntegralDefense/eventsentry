@@ -389,7 +389,12 @@ def process_event(event, sip_campaign_names):
                             'type': i['type'],
                             'username': 'eventsentry',
                             'value': i['value']}
-                    result = sip.post('indicators', data)
+                    try:
+                        result = sip.post('indicators', data)
+                    except ConflictError:
+                        pass
+                    except:
+                        logging.exception('Error addding "{}" manual indicator "{}" to SIP: {}'.format(i['type'], i['value'], result['id']))
                     logging.warning('Added "{}" manual indicator "{}" to SIP: {}'.format(i['type'], i['value'], result['id']))
                 except ConflictError:
                     # Since the indicator already exists, try to update it to make sure that it
