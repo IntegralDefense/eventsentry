@@ -13,18 +13,22 @@ class Module(DetectionModule):
         # Try to identify Emotet by the e-mail format.
         for email in self.event_json['emails']:
             if len(email['to_addresses']) == 1 and email['to_addresses'][0]:
-                to_domain = email['to_addresses'][0].split('@')[1].lower()
-                message_id_pattern_v1v2 = re.compile(r'[0-9]{5,}\.201[7-9][0-9]{5,}@' + to_domain)
-                if message_id_pattern_v1v2.search(email['message_id'].lower()):
-                    if email['urls'] and not email['attachments']:
-                        self.detections.append('Detected Emotet v1/v2 by the message-id and e-mail format: {}'.format(email['message_id']))
-                        self.tags.append('emotet')
+                try:
+                    to_domain = email['to_addresses'][0].split('@')[1].lower()
 
-                message_id_pattern_v3 = re.compile(r'[0-9]{18,21}.[0-9a-z]{16}@' + to_domain)
-                if message_id_pattern_v3.search(email['message_id'].lower()):
-                    if email['urls'] and not email['attachments']:
-                        self.detections.append('Detected Emotet v3 by the message-id and e-mail format: {}'.format(email['message_id']))
-                        self.tags.append('emotet')
+                    message_id_pattern_v1v2 = re.compile(r'[0-9]{5,}\.201[7-9][0-9]{5,}@' + to_domain)
+                    if message_id_pattern_v1v2.search(email['message_id'].lower()):
+                        if email['urls'] and not email['attachments']:
+                            self.detections.append('Detected Emotet v1/v2 by the message-id and e-mail format: {}'.format(email['message_id']))
+                            self.tags.append('emotet')
+
+                    message_id_pattern_v3 = re.compile(r'[0-9]{18,21}.[0-9a-z]{16}@' + to_domain)
+                    if message_id_pattern_v3.search(email['message_id'].lower()):
+                        if email['urls'] and not email['attachments']:
+                            self.detections.append('Detected Emotet v3 by the message-id and e-mail format: {}'.format(email['message_id']))
+                            self.tags.append('emotet')
+                except IndexError:
+                    pass
 
         # Try to identify Emotet "v2" by sandbox results.
         for sample in self.event_json['sandbox']:
