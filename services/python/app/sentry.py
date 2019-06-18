@@ -404,7 +404,7 @@ def process_event(event, sip_campaign_names):
                         try:
                             id_ = result[0]['id']
                             data = {'tags': i['tags']}
-                            update_result = sip.put('/indicators/{}'.format(id_, data))
+                            update_result = sip.put('/indicators/{}'.format(id_), data)
                         except ConflictError:
                             pass
                         except:
