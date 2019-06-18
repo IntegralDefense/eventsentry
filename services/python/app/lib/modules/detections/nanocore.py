@@ -9,14 +9,17 @@ class Module(DetectionModule):
         self.logger.debug('Running the {} detection module'.format(self.name))
 
         # Loop over each sandboxed sample in the event.
+        strings = ['DHCP Service\\', 'LAN Monitor\\', 'WAN Host\\', 'NAS Host\\', 'nanocore', 'Nanocore', 'NanoCore']
         for sample in self.event_json['sandbox']:
 
             # Loop over all of the memory strings.
             for memory_string in sample['memory_strings']:
 
-                if 'nanocore' in memory_string.lower():
-                    self.detections.append('Detected NanoCore by the memory string: {}'.format(memory_string))
-                    self.tags.append('nanocore')
+                # Check if any of the NanoCore strings are found.
+                for s in strings:
+                    if s in memory_string:
+                        self.detections.append('Detected NanoCore by the memory string: {}'.format(memory_string))
+                        self.tags.append('nanocore')
 
             # Loop over all of the process trees.
             trees = sample['process_trees'] + sample['process_trees_decoded']
