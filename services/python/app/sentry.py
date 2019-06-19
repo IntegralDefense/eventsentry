@@ -391,11 +391,11 @@ def process_event(event, sip_campaign_names):
                             'value': i['value']}
                     try:
                         result = sip.post('indicators', data)
+                        logging.warning('Added "{}" manual indicator "{}" to SIP: {}'.format(i['type'], i['value'], result['id']))
                     except ConflictError:
                         pass
                     except:
                         logging.exception('Error addding "{}" manual indicator "{}" to SIP: {}'.format(i['type'], i['value'], result['id']))
-                    logging.warning('Added "{}" manual indicator "{}" to SIP: {}'.format(i['type'], i['value'], result['id']))
                 except ConflictError:
                     # Since the indicator already exists, try to update it to make sure that it
                     # has all of the latest wiki page tags. Start by getting the existing indicator.
