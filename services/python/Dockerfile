@@ -22,6 +22,8 @@ RUN apt-get update \
         locales \
         make \
         p7zip-full \
+        python3 \
+        python3-pip \
         tzdata \
         wget \
     && rm -rf /var/lib/apt/lists/*
@@ -60,24 +62,12 @@ RUN chmod 600 /root/.splunklib.ini
 # Install cbinterface config
 COPY ./app/conf/local/credentials.response /etc/carbonblack/credentials.response
 
-# Install pypy3.
-RUN wget https://bitbucket.org/pypy/pypy/downloads/pypy3.5-v7.0.0-linux64.tar.bz2 \
-    && tar jxvf pypy3.5-v7.0.0-linux64.tar.bz2 \
-    && rm -rf pypy3.5-v7.0.0-linux64.tar.bz2 \
-    && ln -s /eventsentry/external/pypy3.5-v7.0.0-linux64/bin/pypy3 /usr/local/bin/pypy3 \
-    && pypy3 -m ensurepip \
-    && pypy3 -m pip install --upgrade pip \
-    && rm /usr/bin/python3 \
-    && ln -s /usr/local/bin/pypy3 /usr/bin/python3
-ENV PATH="/eventsentry/external/pypy3.5-v7.0.0-linux64/bin/:${PATH}"
-ENV PYTHONWARNINGS=ignore::yaml.YAMLLoadWarning
-
 # Set up the app directory.
 WORKDIR /eventsentry/app
 
 # Install the PIP packages.
 COPY requirements.txt requirements.txt
-RUN pypy3 -m pip install -r requirements.txt
+RUN python3 -m pip install -r requirements.txt
 
 # Install the app.
 COPY . /eventsentry
