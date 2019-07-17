@@ -46,13 +46,6 @@ RUN git clone https://github.com/rofl0r/proxychains-ng.git \
     && rm -rf /eventsentry/external/proxychains-ng
 COPY ./app/conf/local/proxychains.conf /etc/proxychains.conf
 
-# Install getitintocrits.
-RUN git clone https://github.com/IntegralDefense/getitintocrits.git \
-    && ln -s /eventsentry/external/getitintocrits/bin/getitintocrits.py /usr/local/bin/getitintocrits.py \
-    && ln -s /eventsentry/external/getitintocrits/bin/build_relationships.py /usr/local/bin/build_relationships.py
-COPY ./app/conf/local/giic_config.ini /etc/getitintocrits/config.ini
-COPY ./app/conf/local/giic_patterns.ini /etc/getitintocrits/patterns.ini
-
 # Install splunklib.
 RUN git clone https://github.com/IntegralDefense/splunklib.git \
     && ln -s /eventsentry/external/splunklib/splunk.py /usr/local/bin/splunk.py

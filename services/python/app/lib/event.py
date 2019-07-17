@@ -37,7 +37,7 @@ from lib.eventwhitelist import EventWhitelist
 
 
 class Event():
-    def __init__(self, ace_event, mongo_connection, sip, debug=False):
+    def __init__(self, ace_event, sip, debug=False):
         """
         An 'event' as we define it is a collection of 'critical files' and the
         intel associated with them. I consider the following items to be the
@@ -61,8 +61,8 @@ class Event():
         If any of the critical files have changed or we are forcing an update, it will:
 
             * Parse the critical files (which creates indicators)
-            * Check what was parsed against the CRITS whitelist
-            * Clean up the indicators with additional logic that doesn't fit inside CRITS
+            * Check what was parsed against the SIP whitelist
+            * Clean up the indicators with additional logic that doesn't fit inside SIP
             * Perform WHOIS lookups for non-whitelisted domains
             * Run all of the event detection modules
             * Create the event package
@@ -89,15 +89,6 @@ class Event():
         # Set up some paths.
         path_prefix = config['core']['event_root']
         self.path = os.path.join(path_prefix, self.name_disk)
-        if config['intel']['crits']['enabled']:
-            self.crits_path = os.path.join(self.path, '.crits')
-        else:
-            self.crits_path = False
-
-        """
-        # Save the CRITS Mongo connection.
-        self.mongo_connection = mongo_connection
-        """
 
         # Save the SIP connection.
         self.sip = sip
@@ -109,8 +100,7 @@ class Event():
         # Save the event path to the JSON.
         self.json['path'] = self.path
 
-        # Flag to note whether or not a critical file has changed. This will
-        # trigger a full wiki update and a rewrite of the .crits directory.
+        # Flag to note whether or not a critical file has changed.
         self.changed = False
 
     def setup(self, alert_uuids=[], manual_indicators=[], force=False):
@@ -201,11 +191,6 @@ class Event():
                 if not f['critical']:
                     f['md5'] = self.calculate_md5(f['path'])
 
-            """
-            # Get the latest whitelist from CRITS.
-            whitelist = EventWhitelist(mongo_connection=self.mongo_connection)
-            """
-
             # Get the latest whitelist from SIP.
             whitelist = EventWhitelist(sip=self.sip)
 
@@ -273,7 +258,7 @@ class Event():
             self.json['sandbox'] = [sandbox_report.json for sandbox_report in sandbox_reports]
 
             # The EmailParser objects do not know where the attachments are located within the event directory.
-            # This is a handy piece of information for various processes later, such as making the .crits intel directory.
+            # This is a handy piece of information for various processes later.
             for email in self.json['emails']:
                 for attachment in email['attachments']:
                     attachment['event_path'] = ''
@@ -286,7 +271,7 @@ class Event():
                             attachment['event_path'] = f['path']
 
             # The sandbox reports do not know where the sample is located within the event directory. That
-            # is a handy piece of information for various processes later, such as making the .crits intel directory.
+            # is a handy piece of information for various processes later.
             # Also fix the filename in the sandbox reports. VxStream likes to name it after the SHA256 hash
             # and does not appear to included the actual filename anywhere in its JSON report.
             for report in self.json['sandbox']:

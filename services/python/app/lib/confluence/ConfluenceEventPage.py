@@ -2,6 +2,7 @@ import datetime
 import hashlib
 import ipaddress
 import json
+import os
 import time
 from urlfinderlib import is_valid
 
@@ -13,12 +14,12 @@ from lib.constants import HOME_DIR
 
 
 class ConfluenceEventPage(BaseConfluencePage):
-    def __init__(self, page_title, mongo_connection, parent_title='Events'):
+    def __init__(self, page_title, sip, parent_title='Events'):
         # Run the super init to load the config and cache the page if it exists.
         super().__init__(page_title, parent_title=parent_title)
 
-        # Save the CRITS Mongo connection.
-        self.mongo_connection = mongo_connection
+        # Save the SIP connection.
+        self.sip = sip
 
         # If the page does not exist, spin up the template.
         if not self.page_exists():
@@ -38,8 +39,8 @@ class ConfluenceEventPage(BaseConfluencePage):
             # to work the first time instead of the second time the page/event is processed.
             self.commit_page()
 
-    def is_event_ready_for_crits_processing(self, version_number):
-        """ This event checks to make sure all the criteria are in place for the event to go into CRITS. """
+    def is_event_ready_for_sip_processing(self, version_number):
+        """ This event checks to make sure all the criteria are in place for the indicators to go into SIP. """
 
         # Only continue if the current page version is +1 from the old version. This implies
         # that the only change that happened was that someone checked the intel processing checkbox.
@@ -83,8 +84,8 @@ class ConfluenceEventPage(BaseConfluencePage):
 
         manual_indicators = []
 
-        # Get a list of valid indicator types we've created in CRITS.
-        valid_indicator_types = self.mongo_connection.find_distinct('indicators', 'type')
+        # Get a list of valid indicator types we've created in SIP.
+        valid_indicator_types = [t['value'] for t in self.sip.get('/indicators/type')]
 
         # Get the visible text in the section.
         try:
@@ -110,7 +111,7 @@ class ConfluenceEventPage(BaseConfluencePage):
 
                 # The split_line needs at least 2 elements: the indicator type and value. Tags are optional.
                 if len(split_line) >= 2:
-                    # Check if the first element is a valid CRITS indicator type.
+                    # Check if the first element is a valid SIP indicator type.
                     if split_line[0] in valid_indicator_types:
                         # Denote this line as full indicator so we don't reprocess it later.
                         full_indicator = True
@@ -163,7 +164,7 @@ class ConfluenceEventPage(BaseConfluencePage):
         return [i.json for i in manual_indicators]
 
     def update_event_processed(self):
-        """ This function is called after the event is added to CRITS and closed in ACE. """
+        """ This function is called after the indicators are added to SIP and closed in ACE. """
 
         # Reset the checkbox in the Process Event section.
         try:
@@ -173,7 +174,7 @@ class ConfluenceEventPage(BaseConfluencePage):
 
         # Reset the checkbox in the Refresh Wiki section.
         try:
-            self.update_refresh_wiki('Event processed into CRITS and closed in ACE: ')
+            self.update_refresh_wiki('Indicators processed into SIP and closed in ACE: ')
         except:
             self.logger.exception('Unable to update the Refresh Wiki section.')
 
@@ -244,11 +245,11 @@ class ConfluenceEventPage(BaseConfluencePage):
         except:
             self.logger.exception('Unable to update the Alerts section.')
 
-        # CRITS Analysis
+        # SIP Analysis
         try:
-            self.update_crits_analysis(event_json['indicators'])
+            self.update_sip_analysis(event_json['indicators'])
         except:
-            self.logger.exception('Unable to update the CRITS Analysis section.')
+            self.logger.exception('Unable to update the SIP Analysis section.')
 
         # Phish E-mail Information
         try:
@@ -762,8 +763,8 @@ class ConfluenceEventPage(BaseConfluencePage):
 
         self.update_section(div, old_section_id='alerts')
 
-    def update_crits_analysis(self, indicator_json):
-        self.logger.debug('Updating CRITS Analysis section.')
+    def update_sip_analysis(self, indicator_json):
+        self.logger.debug('Updating SIP Analysis section.')
 
         # Create the parent div tag.
         div = self.new_tag('div')
@@ -771,16 +772,16 @@ class ConfluenceEventPage(BaseConfluencePage):
         # Continue the section if we were given some indicators.
         if indicator_json:
             # The indicator JSON has duplicate indicators (Ex: if there are multiple phish emails).
-            # We don't want to bother querying CRITS multiple times for the same thing, so we will
+            # We don't want to bother querying SIP multiple times for the same thing, so we will
             # keep track of the indicator values (not their types, since it's unlikely we'd have the
-            # same value for two different types) that we query. Also, we only want to query CRITS
+            # same value for two different types) that we query. Also, we only want to query SIP
             # for non-whitelisted and non-informational indicators.
             already_checked_indicators = []
             good_indicators = [i for i in indicator_json if not i['whitelisted'] and i['status'] == 'Analyzed']
 
             # Make the section header.
             header = self.new_tag('h2', parent=div)
-            header.string = 'CRITS Analysis'
+            header.string = 'SIP Analysis'
 
             # Set up the pre tag to hold the results.
             pre = self.new_tag('pre', parent=div)
@@ -794,21 +795,23 @@ class ConfluenceEventPage(BaseConfluencePage):
                         # Cache this indicator type/value pair.
                         already_checked_indicators.append(type_value)
 
-                        # Search CRITS for any Analyzed indicators matching this one.
-                        crits_indicators = self.mongo_connection.find('indicators', {'status': 'Analyzed', 'type': indicator['type'], 'value': indicator['value']})
+                        # Search SIP for any Analyzed indicators matching this one.
+                        sip_indicators = self.sip.get('/indicators?status=Analyzed&type={}&exact_value={}'.format(indicator['type'], indicator['value']))
 
                         # Only continue if we got back at least 1 indicator.
-                        if crits_indicators.count() > 0:
+                        if sip_indicators:
                             pre['style'] = 'border:1px solid gray;padding:5px;'
 
-                            for crits_indicator in crits_indicators:
+                            for sip_indicator in sip_indicators:
+                                # Get the full details of each SIP indicator.
+                                details = self.sip.get('/indicators/{}'.format(sip_indicator['id']))
+
                                 # Get all of the indicator's unique references.
                                 references = set()
                                 source_names = set()
-                                for source in crits_indicator['source']:
-                                    source_names.add(source['name'])
-                                    for instance in source['instances']:
-                                        references.add(instance['reference'])
+                                for reference in details['references']:
+                                    source_names.add(reference['source'])
+                                    references.add(reference['reference'])
                                 references = sorted(list(references))
                                 if len(references) > 10:
                                     references = references[-10:]
@@ -820,11 +823,11 @@ class ConfluenceEventPage(BaseConfluencePage):
                                 # 2) There are multiple references.
                                 if len(references) > 1 or not self.get_page_url() in references:
                                     # Extract the values we care about.
-                                    ind_value = crits_indicator['value']
-                                    ind_type = crits_indicator['type']
-                                    ind_tags = crits_indicator['bucket_list']
+                                    ind_value = details['value']
+                                    ind_type = details['type']
+                                    ind_tags = details['tags']
                                     ind_campaigns = set()
-                                    for campaign in crits_indicator['campaign']:
+                                    for campaign in details['campaigns']:
                                         ind_campaigns.add(campaign['name'])
                                     ind_campaigns = sorted(list(ind_campaigns))
 
@@ -840,11 +843,11 @@ class ConfluenceEventPage(BaseConfluencePage):
 
                                     pre.string += '\n'
                                 else:
-                                    self.logger.debug('Skipping indicator: {}'.format(crits_indicator['value']))
+                                    self.logger.debug('Skipping indicator: {}'.format(details['value']))
             except:
-                self.logger.exception('Unable to update the CRITS Analysis section.')
+                self.logger.exception('Unable to update the SIP Analysis section.')
 
-        self.update_section(div, old_section_id='crits_analysis')
+        self.update_section(div, old_section_id='sip_analysis')
 
     def update_phish_info(self, email_json):
         self.logger.debug('Updating Phish Information section.')

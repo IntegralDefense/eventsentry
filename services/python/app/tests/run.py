@@ -11,7 +11,6 @@ if parent_dir not in sys.path:
 from tests import test_cbinterface
 from tests import test_config
 from tests import test_geoiplookup
-from tests import test_getitintocrits
 from tests import test_proxychains
 from tests import test_splunklib
 
@@ -23,7 +22,6 @@ if __name__ == '__main__':
     # Add tests to the test suite
     suite.addTests(loader.loadTestsFromModule(test_cbinterface))
     suite.addTests(loader.loadTestsFromModule(test_geoiplookup))
-    suite.addTests(loader.loadTestsFromModule(test_getitintocrits))
     suite.addTests(loader.loadTestsFromModule(test_proxychains))
     suite.addTests(loader.loadTestsFromModule(test_splunklib))
     suite.addTests(loader.loadTestsFromModule(test_config))
