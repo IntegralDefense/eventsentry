@@ -23,15 +23,12 @@ this_dir = os.path.join(os.path.dirname(__file__), '..')
 if this_dir not in sys.path:
     sys.path.insert(0, this_dir)
 
-from critsapi.critsdbapi import CRITsDBAPI
-from critsapi.critsapi import CRITsAPI
 from lib import indicator
 from lib.ace import ace_api
 from lib.config import config
-from lib.constants import HOME_DIR, GETITINTOCRITS, BUILD_RELATIONSHIPS
+from lib.constants import HOME_DIR
 from lib.event import Event
 from lib.confluence.ConfluenceEventPage import ConfluenceEventPage
-from lib.intel import EventIntel
 from pysip import Client, ConflictError
 
 # Set up logging.
@@ -102,48 +99,14 @@ def process_event(event, sip_campaign_names):
     logging.info('Starting to process event: {}'.format(event['name']))
     start_time = time.time()
 
-    # Create a CRITs Mongo connection.
-    if config['intel']['crits']['enabled']:
-        mongo_uri = config['intel']['crits']['crits_mongo_url']
-        mongo_db = config['intel']['crits']['crits_mongo_db']
-        mongo_connection = CRITsDBAPI(mongo_uri=mongo_uri, db_name=mongo_db)
-        mongo_connection.connect()
-        logging.debug('Connected to CRITS Mongo database: {}@{}'.format(mongo_db, mongo_uri))
-    else:
-        mongo_connection = False
-    
-    # Create a CRITs API connection.
-    if config['intel']['crits']['enabled']:
-        if config['network']['verify_requests']:
-            if os.path.exists('/certificate'):
-                crits_verify = '/certificate'
-            else:
-                crits_verify = True
-        else:
-            crits_verify = False
-        api_url = config['intel']['crits']['crits_api_url']
-        api_key = config['intel']['crits']['crits_api_key']
-        api_user = config['intel']['crits']['crits_api_user']
-        crits_api = CRITsAPI(api_url=api_url, api_key=api_key, username=api_user, verify=crits_verify)
-        logging.debug('Connected to the CRITs API: {}'.format(api_url))
-    else:
-        crits_api = False
-
-    # Get the valid campaigns from CRITs, excluding the "Campaign" campaign.
-    if mongo_connection:
-        crits_campaigns = list(mongo_connection.find_all('campaigns'))
-        campaign_names = [c['name'] for c in crits_campaigns if not c['name'] == 'Campaign']
-    else:
-        campaign_names = []
-
-    # Store the CRITs campaign names with a lowercase wiki tag version.
+    # Store the SIP campaign names with a lowercase wiki tag version.
     campaign_dict = dict()
-    for campaign in campaign_names:
+    for campaign in sip_campaign_names:
         campaign_dict[campaign.replace(' ', '').lower()] = campaign
 
     # Create the event object.
     try:
-        e = Event(event, mongo_connection, sip)
+        e = Event(event, sip)
     except:
         logging.exception('Error creating the Event object: {}'.format(event['name']))
         return
@@ -156,7 +119,7 @@ def process_event(event, sip_campaign_names):
         return
 
     # Connect to the wiki page.
-    wiki = ConfluenceEventPage(e.name_wiki, mongo_connection)
+    wiki = ConfluenceEventPage(e.name_wiki, sip)
     
     # Add the wiki page URL to the event JSON.
     e.json['wiki_url'] = wiki.get_page_url()
@@ -186,7 +149,7 @@ def process_event(event, sip_campaign_names):
                 break
 
         """
-        ADD ANY WHITELISTED INDICATORS FROM THE SUMMARY TABLE TO CRITS AND SIP
+        ADD ANY WHITELISTED INDICATORS FROM THE SUMMARY TABLE TO SIP
         """
 
         # Read the Indicator Summary table to see if there are any checked (whitelisted) indicators.
@@ -220,46 +183,6 @@ def process_event(event, sip_campaign_names):
                                             # Add the good hash indicator to the whitelisted indicator list.
                                             logging.debug('Whitelisting "{}" indicator "{}" by association to: {}'.format(good_indicator['type'], rel, i['value']))
                                             whitelisted_indicators.append(good_indicator)
-
-            if crits_api:
-
-                # Add the whitelisted indicators to the CRITs whitelist.
-                for i in whitelisted_indicators:
-
-                    # If this is a "URI - Path" or "URI - URL" indicator, check its relationships to see if its
-                    # corresponding "URI - Domain Name" or "Address - ipv4-addr" indicator was also checked. If it was,
-                    # we want to ignore the path and URL indicators since the domain/IP serves as a least common denominator.
-                    # This prevents the CRITs whitelist from ballooning in size and slowing things down over time.
-                    skip = False
-                    if i['type'] == 'URI - Path' or i['type'] == 'URI - URL':
-
-                        # Loop over the indicators in the event JSON to find the matching indicator.
-                        for json_indicator in e.json['indicators']:
-                            if i['type'] == json_indicator['type'] and i['value'] == json_indicator['value']:
-
-                                # Loop over the whitelisted indicators and see any of them are a whitelisted (checked)
-                                # domain name or IP address. If the domain/IP appears in the relationships (for the
-                                # "URI - Path" indicators) or in the value (for "URI - URL" indicators), we can ignore it.
-                                relationships = json_indicator['relationships']
-                                for x in whitelisted_indicators:
-                                    if x['type'] == 'URI - Domain Name' or x['type'] == 'Address - ipv4-addr':
-                                        if any(x['value'] in rel for rel in relationships) or x['value'] in i['value']:
-                                            logging.debug('Ignoring redundant "{}" indicator "{}" for CRITs whitelist.'.format(i['type'], i['value']))
-                                            skip = True
-
-                    if not skip:
-                        logging.warning('Adding "{}" indicator "{}" to CRITs whitelist.'.format(i['type'], i['value']))
-    
-                        try:
-                            result = crits_api.add_indicator(i['value'], i['type'], source=config['intel']['default_source'],
-                                                             reference=wiki.get_page_url(), bucket_list=['whitelist:e2w'],
-                                                             add_domain=False)
-    
-                            # If the indicator was added successfully, update its status to Deprecated.
-                            if result:
-                                crits_api.status_update(result['id'], result['type'], 'Deprecated')
-                        except:
-                            logging.exception('Error adding "{}" indicator "{}" to CRITs whitelist'.format(i['type'], i['value']))
 
             if sip:
 
@@ -306,60 +229,6 @@ def process_event(event, sip_campaign_names):
                             logging.exception('Error adding "{}" indicator "{}" to SIP whitelist'.format(i['type'], i['value']))
 
         """
-        READ MANUAL INDICATORS FROM WIKI PAGE AND ADD NEW ONES TO CRITS
-        """
-
-        if crits_api and mongo_connection:
-
-            # Read whatever manual indicators are listed on the wiki page so they can be added to CRITs and the event.
-            manual_indicators = wiki.read_manual_indicators()
-
-            for i in manual_indicators:
-
-                # Add a "manual_indicator" tag to the indicators so that we can exclude them from the
-                # monthly indicator pruning process.
-                i['tags'].append('manual_indicator')
-
-                # Get the indicator's CRITs status.
-                crits_id = indicator.get_crits_id(mongo_connection, i)
-                status = indicator.get_crits_status(mongo_connection, i)
-
-                # Add it to CRITs if it doesn't already exist in CRITs and the status is New.
-                if not crits_id and status == 'New':
-                
-                    try:
-                        # Assemble the correct tags to add to this indicator.
-                        ignore_these_tags = config['wiki']['ignore_these_tags']
-                        add_these_tags = [tag for tag in e.json['tags'] if not tag in ignore_these_tags]
-                        i['tags'] += add_these_tags
-
-                        # Perform the API call to add the indicator.
-                        result = crits_api.add_indicator(i['value'], i['type'], source=config['intel']['default_source'],
-                                                         reference=wiki.get_page_url(), bucket_list=i['tags'],
-                                                         add_domain=False)
-                        logging.warning('Added "{}" manual indicator "{}" to CRITs: {}'.format(i['type'], i['value'], result['id']))
-                    except:
-                        logging.exception('Error adding "{}" manual indicator "{}" to CRITs'.format(i['type'], i['value']))
-
-            # Check if there are any manual indicators in the event JSON that do not appear in this current
-            # reading of the Manual Indicators section. This implies that someone removed something from the
-            # table on the wiki page and refreshed the page. Presumably this means they did not actually want
-            # that indicator, so the best we can do for now it to change its status to Informational.
-            # TODO: Possible improvement to this would be to search for FA Queue ACE alerts for this indicator
-            # and FP them, which would also set the indicator's status to Informational.
-            old_manual_indicators = [i for i in e.json['indicators'] if 'manual_indicator' in i['tags']]
-            for old_indicator in old_manual_indicators:
-                if not [i for i in manual_indicators if i['type'] == old_indicator['type'] and i['value'] == old_indicator['value']]:
-                    try:
-                        # Find the indicator's CRITs ID and disable it.
-                        crits_id = indicator.get_crits_id(mongo_connection, old_indicator)
-                        if crits_id:
-                            crits_api.status_update(crits_id, 'Indicator', 'Informational')
-                            logging.error('Disabled deleted "{}" manual indicator "{}" in CRITs: {}'.format(old_indicator['type'], old_indicator['value'], crits_id))
-                    except:
-                        logging.exception('Error disabling deleted "{}" manual indicator "{}" in CRITs'.format(old_indicator['type'], old_indicator['value']))
-
-        """
         READ MANUAL INDICATORS FROM WIKI PAGE AND ADD NEW ONES TO SIP
         """
 
@@ -399,12 +268,12 @@ def process_event(event, sip_campaign_names):
                 except ConflictError:
                     # Since the indicator already exists, try to update it to make sure that it
                     # has all of the latest wiki page tags. Start by getting the existing indicator.
-                    result = sip.get('/indicators?type={}&value={}'.format(i['type'], urllib.parse.quote(i['value'])))
+                    result = sip.get('/indicators?type={}&exact_value={}'.format(i['type'], urllib.parse.quote(i['value'])))
                     if result:
                         try:
                             id_ = result[0]['id']
                             data = {'tags': i['tags']}
-                            update_result = sip.put('/indicators/{}'.format(id_), data)
+                            sip.put('/indicators/{}'.format(id_), data)
                         except ConflictError:
                             pass
                         except:
@@ -477,36 +346,6 @@ def process_event(event, sip_campaign_names):
                 """
         except:
             logging.exception('Error getting remediation status for e-mail.')
-                        
-        """
-        ADD CRITs STATUS OF EACH INDICATOR TO THE EVENT JSON
-        """
-
-        """
-        if crits_api and mongo_connection:
-
-            # Used as a cache so we don't query CRITs for the same indicator.
-            queried_indicators = {}
-
-            # Query CRITs to get the status of the indicators.
-            logging.debug('Querying CRITs for indicator statuses.') 
-
-            for i in e.json['indicators']:
-                type_value = '{}{}'.format(i['type'], i['value'])
-
-                # Continue if we haven't already processed this type/value pair indicator.
-                if not type_value in queried_indicators:
-
-                    # Get the indicator status from CRITs. Ignore any indicators that were already set to Informational.
-                    if not i['status'] == 'Informational':
-                        i['status'] = indicator.get_crits_status(mongo_connection, i)
-
-                    # Add the indicator to the queried cache.
-                    queried_indicators[type_value] = i['status']
-                # We've already queried CRITs for this type/value, so just set the status.
-                else:
-                    i['status'] = queried_indicators[type_value]
-        """
 
         """
         ADD SIP STATUS OF EACH INDICATOR TO THE EVENT JSON
@@ -574,7 +413,7 @@ def process_event(event, sip_campaign_names):
             for tag in e.json['tags']:
                 if tag in campaign_dict:
                     # Set the campaign name in the event JSON.
-                    e.json['campaign'] = {'crits': campaign_dict[tag], 'wiki': tag}
+                    e.json['campaign'] = {'sip': campaign_dict[tag], 'wiki': tag}
 
         # Replace any campaign tag with the "apt:" version.
         try:
@@ -630,22 +469,14 @@ def process_event(event, sip_campaign_names):
         # version without first refreshing the page.
         e.json['wiki_version'] = wiki.get_page_version()
 
-        """
-        PROCESS THE EVENT INTEL
-        """
-
-        # Make the .crits intel directory structure and write the indicators.
+        # Read the indicator summary table.
         good_indicators, whitelisted_indicators = wiki.read_indicator_summary_table()
-
-        event_intel = EventIntel(e.json, good_indicators)
-        event_intel.build_symlink_directory_structure()
-        event_intel.place_indicator_and_relationship_csvs()
 
         # Write out the event JSON.
         e.write_json()
 
     # If the intel processing checkbox is checked...
-    if wiki.is_event_ready_for_crits_processing(e.json['wiki_version']):
+    if wiki.is_event_ready_for_sip_processing(e.json['wiki_version']):
         logging.info('Processing the event intel: {}'.format(e.json['name']))
 
         # Figure out the event source.
@@ -682,79 +513,15 @@ def process_event(event, sip_campaign_names):
                 except:
                     logging.exception('Error when adding "{}" indicator "{}" into SIP.'.format(i['type'], i['value']))
 
-        # Try to get the event description from the Overview section.
-        overview_section = wiki.get_section('overview')
-        try:
-            description = overview_section.find('p').text.replace('"', '\\"')
-        except:
-            description = ''
-
-        if source and description:
-            commands = []
-
-            # CD into the intel directory.
-            crits_root = os.path.join(e.json['path'], '.crits')
-            cd_command = 'cd {}'.format(crits_root)
-            commands.append(cd_command)
-
-            # Command to remove any bad characters from the intel files.
-            sed_command = 'find {} -type f -exec sed -i "s/\\x0//g" {{}} \;'.format(crits_root)
-            commands.append(sed_command)
-
-            # Get the event campaign.
+            # Close the event in ACE.
             try:
-                campaign = e.json['campaign']['crits']
-                campaign_conf = 'medium'
+                ace_api.update_event_status(e.json['ace_event']['id'], 'CLOSED')
+                logging.warning('Closed event in ACE: {}'.format(e.json['name']))
+
+                # Update the wiki to reflect that the event was processed.
+                wiki.update_event_processed()
             except:
-                campaign = ''
-                campaign_conf = ''
-
-            # Figure out the event type.
-            if e.json['emails']:
-                event_type = 'Phishing'
-            else:
-                event_type = 'Malicious Code'
-
-            # Figure out the event time.
-            if e.json['emails']:
-                event_time = e.json['emails'][0]['received_time']
-            else:
-                event_time = e.json['ace_alerts'][0]['time']
-
-            # Strip out any timezone offset if the event time has one.
-            # 2018-05-16 07:56:09
-            if len(event_time) > 19:
-                event_time = event_time[0:19]
-
-            # Build the getitintocrits.py command.
-            giic_command = '{} --no-prompt -s "{}" -r "{}" -e "{}" --description "{}" --type "{}" --date "{}" --campaign "{}" --campaign-conf "{}" --bucket-list "{}"'.format(
-                GETITINTOCRITS, source, wiki.get_page_url(), e.json['name'], description, event_type, event_time, campaign,
-                campaign_conf, ','.join(sorted(list(set(e.json['tags'])))))
-            commands.append(giic_command)
-
-            # Command to craft the relationships between all the indicators and objects.
-            br_command = '{} {}'.format(BUILD_RELATIONSHIPS, os.path.join(crits_root, 'relationships.txt'))
-            commands.append(br_command)
-
-            # Continue if we have the required pieces to run getitintocrits.py.
-            if description and event_type and event_time and e.json['tags']:
-                # Run all of the commands.
-                command_string = ' && '.join(commands)
-                os.system(command_string)
-
-                # Query CRITs to make sure the event actually exists now.
-                crits_events = [e['title'] for e in list(mongo_connection.find_all('events'))]
-                if e.json['name'] in crits_events:
-
-                    # If it exists in CRITs, close the event in ACE.
-                    try:
-                        ace_api.update_event_status(e.json['ace_event']['id'], 'CLOSED')
-                        logging.warning('Closed event in ACE: {}'.format(e.json['name']))
-
-                        # Update the wiki to reflect that the event was processed into CRITs.
-                        wiki.update_event_processed()
-                    except:
-                        logging.exception('Error when closing the event in ACE: {}'.format(e.json['name']))
+                logging.exception('Error when closing the event in ACE: {}'.format(e.json['name']))
 
     logging.info('Finished event "{0:s}" in {1:.5f} seconds.'.format(event['name'], time.time() - start_time))
 
@@ -787,7 +554,7 @@ def start(num_workers=1):
 
         # Get the valid campaigns from SIP.
         if sip:
-            sip_campaign_names = [c['name'] for c in sip.get('campaigns')]
+            sip_campaign_names = [c['name'] for c in sip.get('campaigns') if not c['name'] == 'Campaign']
         else:
             sip_campaign_names = []
 

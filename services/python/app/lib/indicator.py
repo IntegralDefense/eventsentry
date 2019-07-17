@@ -8,7 +8,7 @@ from urlfinderlib import is_valid
 
 class Indicator:
     def __init__(self, type, value, status='New', tags=[], relationships=[]):
-        """ Represents a CRITS indicator. """
+        """ Represents a SIP indicator. """
 
         self.type = type
         self.value = value
@@ -82,48 +82,6 @@ def merge_indicators(indicators):
                         merged_ind.whitelisted = False
 
     return merged
-
-def get_crits_status(mongo_connection, indicator):
-    """ Queries the Mongo DB connection to get the indicator status. """
-
-    try:
-        if isinstance(indicator, dict):
-            indicator_type = indicator['type']
-            indicator_value = indicator['value']
-        else:
-            indicator_type = indicator.type
-            indicator_value = indicator.value
-
-        # The use of regex for a case-insensitive search really slows this down...
-        result = list(mongo_connection.find('indicators', {'type': indicator_type, 'value': re.compile('^{}$'.format(re.escape(indicator_value)), re.IGNORECASE)}))
-        if result:
-            return result[0]['status']
-        else:
-            return 'New'
-    except:
-        return 'Unknown'
-
-
-def get_crits_id(mongo_connection, indicator):
-    """ Queries the Mongo DB connection to get the indicator ID. """
-
-    try:
-        if isinstance(indicator, dict):
-            indicator_type = indicator['type']
-            indicator_value = indicator['value']
-        else:
-            indicator_type = indicator.type
-            indicator_value = indicator.value
-
-        # The use of regex for a case-insensitive search really slows this down...
-        result = list(mongo_connection.find('indicators', {'type': indicator_type, 'value': re.compile('^{}$'.format(re.escape(indicator_value)), re.IGNORECASE)}))
-        if result:
-            return result[0]['_id']
-        else:
-            return None
-    except:
-        raise
-
 
 def make_url_indicators(urls, tags=[]):
     """ Make indicators from a list of URLs. """

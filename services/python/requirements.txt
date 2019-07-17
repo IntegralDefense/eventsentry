@@ -3,10 +3,8 @@ beautifulsoup4
 bs4
 cbinterface
 configparser
-critsapi
 flockcontext
 lxml
-pymongo
 pysip
 python-dateutil
 python-magic

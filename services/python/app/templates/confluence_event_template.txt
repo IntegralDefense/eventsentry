@@ -154,10 +154,10 @@
     </ac:rich-text-body>
 </ac:structured-macro>
 
-<ac:structured-macro ac:macro-id="crits_analysis" ac:name="section" ac:schema-version="1">
+<ac:structured-macro ac:macro-id="sip_analysis" ac:name="section" ac:schema-version="1">
     <ac:parameter ac:name="border">true</ac:parameter>
     <ac:rich-text-body>
-        <h2>CRITS Analysis</h2>
+        <h2>SIP Analysis</h2>
     </ac:rich-text-body>
 </ac:structured-macro>
 

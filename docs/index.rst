@@ -12,7 +12,7 @@ Major Features
 * **Detects types of malware** using built-in and extendable detection modules.
 * **Detects kill chain phase** by determining if a user clicked a link, submitted credentials, opened a malware sample, etc.
 * **Extracts indicators** from e-mails, sandbox reports, and other artifacts.
-* **Automatically uploads indicators**, samples, and e-mails to CRITs and creates appropriate relationships between them.
+* **Automatically uploads indicators** to SIP and creates appropriate relationships between them.
 * **Maintains an event repository** containing copies of the ACE alerts and all their artifacts.
 * **Creates a shareable intel package** containing a summary of the event including indicators, malware samples, and e-mail headers.
 
@@ -30,7 +30,7 @@ Required
 Event Sentry currently requires the following systems:
 
 * `ACE <https://github.com/IntegralDefense/ACE>`_
-* `CRITs <https://github.com/crits/crits>`_
+* `SIP <https://github.com/IntegralDefense/SIP>`_
 * `Confluence <https://www.atlassian.com/software/confluence>`_
 
 Recommended

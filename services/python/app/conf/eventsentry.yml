@@ -12,7 +12,6 @@ core:
 
   # List of path strings to skip when walking the event directory
   skip_paths:
-    - ".crits"
     - ".ace"
     - ".dmp"
     - ".pcap"
@@ -67,28 +66,6 @@ intel:
 
   # Default intel source to use for Manual Indicators, whitelisted indicators, etc.
   default_source: your_company
-
-  crits:
-
-    # True/False to enable CRITS usage
-    enabled: False
-
-    # URL to access the CRITS API
-    # Example: https://yourcrits.local/api/v1
-    crits_api_url: ""
-
-    # User account to use to access the CRITS API
-    crits_api_user: ""
-
-    # API key for the CRITS API user
-    crits_api_key: ""
-
-    # URL to access the CRITS Mongo database
-    # Example: mongodb://yourcrits.local:27017/
-    crits_mongo_url: ""
-
-    # CRITS Mongo database name
-    crits_mongo_db: crits
 
   sip:
 

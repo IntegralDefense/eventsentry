@@ -4,8 +4,6 @@ import subprocess
 import sys
 import unittest
 
-from critsapi.critsapi import CRITsAPI
-from critsapi.critsdbapi import CRITsDBAPI
 from lib.constants import HOME_DIR
 from lib.confluence.ConfluenceEventPage import ConfluenceEventPage
 
@@ -45,62 +43,6 @@ class ConfigTestCase(unittest.TestCase):
         path = config.get('production', 'verify_requests_cert', fallback=None)
         if path:
             self.assertTrue(os.access(path, os.R_OK))
-
-    ###################
-    ##               ##
-    ##  CRITS TESTS  ##
-    ##               ##
-    ###################
-
-    def test_critsapi_connection(self):
-        """ Make sure we can connect to CRITS """
-
-        class WritableObject:
-            def __init__(self):
-                self.content = []
-            def flush(self):
-                pass
-            def write(self, string):
-                self.content.append(string)
-
-        # Hijack the stdout since critsapi uses print().
-        hijack_stdout = WritableObject()
-        orig_stdout = sys.stdout
-        sys.stdout = hijack_stdout
-
-        os.environ['http_proxy'] = ''
-        os.environ['https_proxy'] = ''
-
-        # Search for a bogus indicator ID that we expect to not exist.
-        verify = config.getboolean('production', 'verify_requests', fallback=False)
-        cert = config.get('production', 'verify_requests_cert', fallback=None)
-        api_url = config.get('production', 'crits_api_url')
-        api_key = config.get('production', 'crits_api_key')
-        api_user = config.get('production', 'crits_api_user')
-        if verify and cert:
-            crits_api = CRITsAPI(api_url=api_url, api_key=api_key, username=api_user, verify=cert)
-        elif verify and not cert:
-            crits_api = CRITsAPI(api_url=api_url, api_key=api_key, username=api_user, verify=verify)
-        else:
-            crits_api = CRITsAPI(api_url=api_url, api_key=api_key, username=api_user, verify=False)
-        result = crits_api.get_object('5b800a6cad951d2daaaaaaaa', 'Indicator')
-
-        # Restore stdout
-        sys.stdout = orig_stdout
-
-        if 'was: 401' in ''.join(hijack_stdout.content):
-            self.fail('Check your critsapi username/key in: {}'.format(config_path))
-        self.assertTrue('was: 404' in ''.join(hijack_stdout.content))
-
-    def test_critsapi_mongo(self):
-        """ Make sure we can connect to the raw Mongo database """
-
-        mongo_uri = config.get('production', 'crits_mongo_url')
-        mongo_db = config.get('production', 'crits_mongo_db')
-        mongo_connection = CRITsDBAPI(mongo_uri=mongo_uri, db_name=mongo_db)
-        mongo_connection.connect()
-        indicator = mongo_connection.find_one('indicators', {'status': 'Analyzed'})
-        self.assertTrue(indicator)
 
     ########################
     ##                    ##
