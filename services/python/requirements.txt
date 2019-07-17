@@ -5,7 +5,6 @@ cbinterface
 configparser
 flockcontext
 lxml
-pymongo
 pysip
 python-dateutil
 python-magic

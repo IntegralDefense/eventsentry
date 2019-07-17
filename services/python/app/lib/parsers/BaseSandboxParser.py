@@ -220,7 +220,6 @@ def dedup_reports(report_list, whitelist):
 
         if report.sha512:
             dedup_report.sha512 = report.sha512
-            # CRITS does not currently have a Hash - SHA512 indicator type.
 
         if report.ssdeep:
             dedup_report.ssdeep = report.ssdeep
