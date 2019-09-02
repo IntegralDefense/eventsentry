@@ -7,6 +7,7 @@ import re
 import subprocess
 
 from lib.modules.DetectionModule import *
+from cbinterface.modules.helpers import CONFIGURED_TIMEBASE as cbi_timezone
 
 class Module(DetectionModule):
     def __init__(self, name, event_json):
@@ -49,10 +50,12 @@ class Module(DetectionModule):
 
         # Get all of the good Windows - FileName indicators from the event.
         good_indicators = [i for i in self.event_json['indicators'] if not i['whitelisted']]
-        filenames = list(set([i['value'] for i in good_indicators if i['type'] == 'Windows - FileName' and (i['status'] == 'New' or i['status'] == 'Analyzed')]))
+        filenames = list(set([i['value'] for i in good_indicators if i['type'] == 'Windows - FileName' and (i['status'] == 'New' or i['status'] == 'Analyzed' or i['status'] == 'In Progress')]))
+        self.logger.debug('cbinterface filenames: {}'.format(filenames))
 
         # Get all of the good Hash - MD5 indicators from the event.
-        md5s = list(set([i['value'] for i in good_indicators if i['type'] == 'Hash - MD5' and (i['status'] == 'New' or i['status'] == 'Analyzed')]))
+        md5s = list(set([i['value'] for i in good_indicators if i['type'] == 'Hash - MD5' and (i['status'] == 'New' or i['status'] == 'Analyzed' or i['status'] == 'In Progress')]))
+        self.logger.debug('cbinterface md5s: {}'.format(md5s))
 
         # Get the event time so that we can limit the scope of the cbinterface queries.
         event_time = None
@@ -64,12 +67,13 @@ class Module(DetectionModule):
         # Continue if we have an event time.
         if event_time:
 
-            # cbinterface needs Eastern Time for the queries, so convert it.
-            tzstr = dateutil.tz.tzstr('EST5EDT')
+            # convert to whatever default timezone cbinterface is configured to use (default is GMT)
             event_time_obj = dateutil.parser.parse(event_time, ignoretz=False)
-            now_aware = event_time_obj.replace(tzinfo=pytz.UTC)
-            est_string = str(now_aware.astimezone(tzstr))[0:10]
-            est_string = '{} 00:00:00'.format(est_string)
+            now_aware = event_time_obj.replace(tzinfo=cbi_timezone)
+            cbi_time_string = str(now_aware.astimezone(cbi_timezone))[0:10]
+            cbi_time_string = '{} 00:00:00'.format(cbi_time_string)
+
+            self.logger.debug('cbinterface cbi_time_string: {}'.format(cbi_time_string))
 
             # Run the cbinterface commands for each company in the event.
             for company in company_names:
@@ -78,7 +82,8 @@ class Module(DetectionModule):
                 for filename in filenames:
 
                     # Build and run the cbinterface command.
-                    command = 'cbinterface -e {} query --no-warnings \'{} {} {} {} (filemod:"{}" OR cmdline:"{}")\' -s \'{}\''.format(company, ignore_these_process_names_string, ignore_these_process_md5s_string, ignore_these_computers_string, ignore_these_users_string, filename, filename, est_string)
+                    command = 'cbinterface -e {} query --no-warnings \'{} {} {} {} (filemod:"{}" OR cmdline:"{}")\' -s \'{}\''.format(company, ignore_these_process_names_string, ignore_these_process_md5s_string, ignore_these_computers_string, ignore_these_users_string, filename, filename, cbi_time_string)
+                    self.logger.debug(command)
                     try:
                         output = subprocess.check_output(command, shell=True).decode('utf-8')
 
@@ -100,7 +105,8 @@ class Module(DetectionModule):
                 # Search for each MD5.
                 for md5 in md5s:
 
-                    command = 'cbinterface -e {} query --no-warnings \'{} {} {} {} md5:{}\' -s \'{}\''.format(company, ignore_these_process_names_string, ignore_these_process_md5s_string, ignore_these_computers_string, ignore_these_users_string, md5, est_string)
+                    command = 'cbinterface -e {} query --no-warnings \'{} {} {} {} md5:{}\' -s \'{}\''.format(company, ignore_these_process_names_string, ignore_these_process_md5s_string, ignore_these_computers_string, ignore_these_users_string, md5, cbi_time_string)
+                    self.logger.debug(command)
                     try:
                         output = subprocess.check_output(command, shell=True).decode('utf-8')
 
