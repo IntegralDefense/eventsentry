@@ -29,7 +29,7 @@ from lib.config import config
 from lib.constants import HOME_DIR
 from lib.event import Event
 from lib.confluence.ConfluenceEventPage import ConfluenceEventPage
-from pysip import Client, ConflictError
+from pysip import Client, ConflictError, RequestError
 
 # Set up logging.
 logging.basicConfig(format='%(asctime)s %(levelname)s %(filename)s:%(lineno)d %(message)s', level=logging.INFO)
@@ -371,7 +371,12 @@ def process_event(event, sip_campaign_names):
 
                     # Get the indicator status from SIP. Ignore any indicators that were already set to Informational.
                     if not i['status'] == 'Informational':
-                        result = sip.get('indicators?type={}&exact_value={}'.format(i['type'], urllib.parse.quote(i['value'])))
+                        result = None
+                        try:
+                            result = sip.get('indicators?type={}&exact_value={}'.format(i['type'], urllib.parse.quote(i['value'])))
+                        except RequestError as E:
+                            if 'uri too large' in str(E).lower():
+                                logging.warning("414 Request-URI Too Large for indicator value: {}".format(urllib.parse.quote(i['value'])))
                         if result:
                             id_ = result[0]['id']
                             result = sip.get('indicators/{}'.format(id_))
